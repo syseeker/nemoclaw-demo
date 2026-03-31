@@ -79,15 +79,19 @@ brev open <instance-name> cursor
 
 Cursor will connect to the remote instance via SSH. From there, continue to [Step 2](#step-2-install-nemoclaw).
 
-### Option C: Brev / WSL / Cursor
+### Option C: Brev / WSL2 / Cursor
 
 > Requires completion of [Option A](#option-a-brev-nemoclaw-launchable) steps 1–3, and [Cursor](https://www.cursor.com/) installed on your Windows machine.
 
 <!-- TODO: WSL-specific Brev CLI install, Cursor remote SSH setup -->
 
+@TODO:Haritha
+
 ### Option D: DGX Spark
 
 <!-- TODO: provisioning steps, access method -->
+
+@TODO: Jovan
 
 ---
 
@@ -102,6 +106,7 @@ For Cursor setups (Options B/C/D), run manually:
 cd ~/NemoClaw
 bash ./install.sh
 ```
+@TODO: Add guideline to get API key
 
 When asked, choose:
 
