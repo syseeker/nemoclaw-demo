@@ -1,5 +1,9 @@
 # Installation Guide
 
+This guide walks you through installing **NemoClaw**, an agentic AI platform that combines the power of large language models with secure, policy-controlled execution environments. NemoClaw provides sandboxed containers where AI agents can safely execute commands, access approved network resources, and interact with external services—all while respecting granular security policies you define. Whether you're running demos with Telegram bots, building autonomous workflows, or experimenting with AI-assisted development, this installation process will set up the core NemoClaw runtime, OpenShell gateway, and your choice of LLM provider (NVIDIA NIM cloud endpoints, Ollama, or vLLM). By the end of this guide, you'll have a fully functional NemoClaw instance ready to run your first agent demos. 
+
+For more detailed information about NemoClaw's architecture, policy system, and advanced features, visit the [official NemoClaw documentation](https://docs.nemoclaw.ai).
+
 ## Prerequisites
 
 ### Hardware
