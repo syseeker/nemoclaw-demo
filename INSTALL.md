@@ -2,6 +2,20 @@
 
 [NVIDIA NemoClaw](https://docs.nvidia.com/nemoclaw/latest/index.html) is an open source reference stack that simplifies running [OpenClaw](https://openclaw.ai/) always-on assistants more safely. It installs the NVIDIA OpenShell runtime, part of NVIDIA Agent Toolkit, an environment designed for executing claws with additional security, and open source models like NVIDIA Nemotron.
 
+This installation guide walks you through getting NemoClaw running end to end with different setup options. The installation process consists of 3 main steps.
+1. Step 01: Environmental setup
+1. Step 02: Install NemoClaw
+1. Step 03: Policy preset (optional)
+
+
+
+You can choose your desired installation method from the options below: 
+#### Option A: Brev NemoClaw Launchable - Complete browser-based development envionment
+#### Option B: Brev NemoClaw Launchable - Connect to Cursor IDE (Linux host machine)
+#### Option C: Brev NemoClaw Launchable - Connect to Cursor IDE with WSL (Windows host machine)
+#### Option D: Setup NemoClaw on DGX Spark
+
+
 ## Prerequisites
 
 ### Hardware
