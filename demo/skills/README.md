@@ -14,5 +14,8 @@ so the CLI and gateway agree on the same path. See
 
 | Skill | Directory |
 | --- | --- |
+<<<<<<< HEAD
 | Sandbox heartbeat (health summary for Telegram) | [sandbox-heartbeat/](sandbox-heartbeat/) |
+=======
+>>>>>>> main
 | Philosopher nudge (LLM-themed Telegram line) | [philosopher-nudge/](philosopher-nudge/) |
