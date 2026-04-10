@@ -9,3 +9,5 @@
 | [AI-Q Blueprint](aiq-blueprint/aiq-blueprint.md) | Deploy AI-Q blueprint with NemoClaw |
 
 > **Prerequisites**: Complete [INSTALL.md](../INSTALL.md) Steps 1–2 before running any demo.
+>
+> See also: [demo-nvidia-official/](../demo-nvidia-official/) — community demos from [brevdev/nemoclaw-demos](https://github.com/brevdev/nemoclaw-demos).
