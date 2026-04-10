@@ -59,7 +59,7 @@ def main() -> None:
     if not text:
         sys.stderr.write(
             "No message text. Provide argv, TELEGRAM_NUDGE_TEXT, or --stdin "
-            "(see demo/scripts/run_philosopher_nudge_llm.sh).\n",
+            "(see demo/telegram-hourly-nudge/scripts/run_philosopher_nudge_llm.sh).\n",
         )
         raise SystemExit(2)
 
@@ -67,7 +67,7 @@ def main() -> None:
     chat_raw = os.environ.get("TELEGRAM_NUDGE_CHAT_ID")
     if not token or not chat_raw:
         raise SystemExit(
-            "Set TELEGRAM_BOT_TOKEN and TELEGRAM_NUDGE_CHAT_ID (see demo/2.2-telegram-hourly-nudge.md).",
+            "Set TELEGRAM_BOT_TOKEN and TELEGRAM_NUDGE_CHAT_ID (see demo/telegram-hourly-nudge.md).",
         )
 
     try:

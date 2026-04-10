@@ -10,7 +10,7 @@ Install each skill under both:
   `/home/sandbox`)
 
 so the CLI and gateway agree on the same path. See
-[Demo 2.2](../2.2-telegram-hourly-nudge.md) for copy/install and cron wiring.
+[Telegram hourly nudge demo](../) for copy/install and cron wiring.
 
 | Skill | Directory |
 | --- | --- |

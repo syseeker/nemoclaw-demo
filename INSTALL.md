@@ -199,7 +199,7 @@ Before heading to the demo, make sure NemoClaw is installed and functioning as e
 
 If all the above commands complete without errors, you are ready to move on to the demo!
 
-Once installation is complete, head to [demo/1.0-basic.md](demo/1.0-basic.md) to run your first demo.
+Once installation is complete, head to [demo/basic/basic.md](demo/basic/basic.md) to run your first demo.
 
 ---
 

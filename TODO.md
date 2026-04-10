@@ -27,10 +27,10 @@ Split the current monolithic content into focused documents.
 
 ### 3. `demo/` — Demo Scenarios & Integration Guides
 
-- [~] **P1** Core demo: sandbox policy enforcement (deny-by-default, approve/deny flow) → `demo/1.0-basic.md`
-- [~] **P1** Network control: egress policy, `openshell term` monitoring, finance preset → `demo/1.0-basic.md`
-- [~] **P1** Telegram integration: setup and usage guide → `demo/2.0-telegram-bridge.md`
-- [~] **P2** Migrate current `demo-plan.md` walkthrough (phases 1–4, cheat sheet, talking points) → `demo/1.0-basic.md`
+- [~] **P1** Core demo: sandbox policy enforcement (deny-by-default, approve/deny flow) → `demo/basic/`
+- [~] **P1** Network control: egress policy, `openshell term` monitoring, finance preset → `demo/basic/`
+- [~] **P1** Telegram integration: setup and usage guide → `demo/telegram-bridge/`
+- [~] **P2** Migrate current `demo-plan.md` walkthrough (phases 1–4, cheat sheet, talking points) → `demo/basic/`
 - [ ] **P1** Resource control: filesystem restrictions, sandbox isolation
 - [ ] **P1** With vs without NemoClaw policy comparison
 - [ ] **P1** NAT integration: how to integrate with a coding agent (e.g. Cursor, Cline)

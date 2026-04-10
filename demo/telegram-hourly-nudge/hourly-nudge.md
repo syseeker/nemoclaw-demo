@@ -1,4 +1,4 @@
-# Demo 2.2: Telegram — Hourly philosopher nudge (cron + OpenClaw skill)
+# Telegram — Hourly philosopher nudge (cron + OpenClaw skill)
 
 In this tutorial you will wire up an **hourly Telegram nudge** powered by
 NemoClaw. A cron job on the host asks the **LLM inside the sandbox** — guided
@@ -25,13 +25,13 @@ Example: `Ting tong, 2026-04-04 14:00 +08 — Is rest part of work, or its inter
 See [How it fits together](#how-it-fits-together) at the end for a diagram of the
 full flow (Cron → Host → OpenShell → Sandbox/OpenClaw → Telegram → bridge).
 
-**Reference:** [Telegram bridge (NVIDIA)](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html) · [Demo 2.0 — bridge](2.0-telegram-bridge.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
+**Reference:** [Telegram bridge (NVIDIA)](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html) · [Demo 2.0 — bridge](../telegram-bridge/telegram-bridge.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
 
 ---
 
 ## Before you start
 
-- Finish a normal **Telegram + NemoClaw** setup ([Demo 2.0](2.0-telegram-bridge.md)):
+- Finish a normal **Telegram + NemoClaw** setup ([Demo 2.0](../telegram-bridge/telegram-bridge.md)):
   you need a bot token, `nemoclaw start`, and a working sandbox with `openclaw`.
 - **On the host** (same machine as `openshell` / `cron`): Python 3, `ssh`, `base64`.
 - Know **one Telegram chat id** where the bot may post (DM or group; often a
@@ -57,7 +57,7 @@ and tokens are covered in the [FAQ: bot token vs chat ids](#faq-bot-token-vs-cha
 
 ## Step 2 — Install the `philosopher-nudge` skill in the sandbox
 
-The skill file in this repo is [`demo/skills/philosopher-nudge/SKILL.md`](skills/philosopher-nudge/SKILL.md).
+The skill file in this repo is [`skills/philosopher-nudge/SKILL.md`](skills/philosopher-nudge/SKILL.md).
 OpenClaw should see it under **both** of these inside the sandbox (create dirs if needed):
 
 - `/sandbox/.openclaw/skills/philosopher-nudge/SKILL.md`
@@ -68,7 +68,7 @@ OpenClaw should see it under **both** of these inside the sandbox (create dirs i
 ```bash
 export SANDBOX_NAME="your-sandbox"
 export SKILL_ID="philosopher-nudge"
-export SKILL_FILE="${HOME}/NemoClaw-Demo/demo/skills/philosopher-nudge/SKILL.md"
+export SKILL_FILE="${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md"
 bash "${HOME}/NemoClaw/test/e2e/e2e-cloud-experimental/features/skill/add-sandbox-skill.sh"
 ```
 
@@ -80,14 +80,14 @@ dirs, and paste the skill into both paths (e.g. `nano`). **Or** use
 
 ## Step 3 — Config + wrapper (copy from this repo)
 
-This repo ships two templates in [`demo/templates/`](templates/). Copy them to
+This repo ships two templates in [`templates/`](templates/). Copy them to
 your home directory and fill in the blanks:
 
 **3a — Environment file** (secrets + settings):
 
 ```bash
 mkdir -p ~/.config
-cp "${HOME}/NemoClaw-Demo/demo/templates/nemoclaw-telegram-nudge.env.example" \
+cp "${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/templates/nemoclaw-telegram-nudge.env.example" \
    ~/.config/nemoclaw-telegram-nudge.env
 chmod 600 ~/.config/nemoclaw-telegram-nudge.env
 ```
@@ -108,7 +108,7 @@ Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X` in nano).
 
 ```bash
 mkdir -p ~/bin
-cp "${HOME}/NemoClaw-Demo/demo/templates/run-telegram-nudge.sh" \
+cp "${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/templates/run-telegram-nudge.sh" \
    ~/bin/run-telegram-nudge.sh
 chmod +x ~/bin/run-telegram-nudge.sh
 ```
@@ -129,8 +129,8 @@ line at the top of your copied wrapper.
 **3c — Make the pipeline scripts executable** (once):
 
 ```bash
-chmod +x ~/NemoClaw-Demo/demo/scripts/run_philosopher_nudge_llm.sh
-chmod +x ~/NemoClaw-Demo/demo/scripts/hourly_telegram_nudge.py
+chmod +x ~/NemoClaw-Demo/demo/telegram-hourly-nudge/scripts/run_philosopher_nudge_llm.sh
+chmod +x ~/NemoClaw-Demo/demo/telegram-hourly-nudge/scripts/hourly_telegram_nudge.py
 ```
 
 ---
@@ -225,7 +225,7 @@ tail -f /tmp/nemoclaw-services-clawpit/telegram-bridge.log
 - **Theme**: change **`PHILOSOPHER_THEME`** in your `.env` file — `life`, `work`,
   `games`, `love`, `hobby`, `nature`, or freeform text like `friendship and loyalty`.
 - **Skill rules & output format**: edit
-  [`demo/skills/philosopher-nudge/SKILL.md`](skills/philosopher-nudge/SKILL.md),
+  [`skills/philosopher-nudge/SKILL.md`](skills/philosopher-nudge/SKILL.md),
   re-upload to the sandbox (Step 2).
 - **Cron schedule**: edit the crontab line — e.g. `*/30 6-23 * * *` for every
   30 minutes, or `0 9,12,18 * * *` for three fixed times.
@@ -378,11 +378,11 @@ The bridge only appends lines when Telegram delivers `getUpdates` with a **text*
 ```bash
 NEMOCLAW_DEMO_ROOT="${NEMOCLAW_DEMO_ROOT:-${HOME}/NemoClaw-Demo}"
 openshell sandbox upload "<sandbox>" \
-  "${NEMOCLAW_DEMO_ROOT}/demo/skills/philosopher-nudge/SKILL.md" \
+  "${NEMOCLAW_DEMO_ROOT}/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md" \
   /sandbox/.openclaw/skills/philosopher-nudge/
 
 openshell sandbox upload "<sandbox>" \
-  "${NEMOCLAW_DEMO_ROOT}/demo/skills/philosopher-nudge/SKILL.md" \
+  "${NEMOCLAW_DEMO_ROOT}/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md" \
   /home/sandbox/.openclaw/skills/philosopher-nudge/
 ```
 
@@ -404,13 +404,13 @@ test -f /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md && grep -m1 '^name:
 openclaw skills list
 ```
 
-Or use `openclaw tui` and ask in plain language, e.g. *Use the philosopher-nudge skill with theme work; one Ting tong line.* Telegram usually wants **sentences**, not `/commands` — see the skill and [Demo 2.0](2.0-telegram-bridge.md).
+Or use `openclaw tui` and ask in plain language, e.g. *Use the philosopher-nudge skill with theme work; one Ting tong line.* Telegram usually wants **sentences**, not `/commands` — see the skill and [Demo 2.0](../telegram-bridge/telegram-bridge.md).
 
 <a id="faq-hang-or-pairing"></a>
 
 ### 8. The smoke test or cron run seems to hang
 
-1. **Gateway / pairing** — complete device approval if prompted ([2.0](2.0-telegram-bridge.md)).
+1. **Gateway / pairing** — complete device approval if prompted ([2.0](../telegram-bridge/telegram-bridge.md)).
 2. On the **host**, run `openshell term` and approve egress if asked.
 3. Confirm `SKILL.md` exists in the sandbox paths from Step 2.
 4. First model call can take minutes; default cap is **180s** (`RUN_PHILOSOPHER_NUDGE_TIMEOUT_SEC` in the env file).
@@ -449,6 +449,6 @@ Comma-separated numeric ids (e.g. `-100…` for supergroups). Use [@getidsbot](h
 
 ## See also
 
-- [Demo 2.0 — Telegram bridge](2.0-telegram-bridge.md)
+- [Demo 2.0 — Telegram bridge](../telegram-bridge/telegram-bridge.md)
 - [Demo skills README](skills/README.md)
-- [INSTALL.md](../INSTALL.md)
+- [INSTALL.md](../../INSTALL.md)

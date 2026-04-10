@@ -1,4 +1,4 @@
-# Demo 2.0: Telegram Bridge — HEARTBEAT & CRON Job
+# Telegram Bridge — HEARTBEAT & CRON Job
 
 Interact with the OpenClaw agent through Telegram instead of the terminal.
 This demo covers two patterns: a HEARTBEAT check and a scheduled CRON Job.
@@ -19,7 +19,7 @@ This demo covers two patterns: a HEARTBEAT check and a scheduled CRON Job.
 
 ## Prerequisites
 
-- A running NemoClaw sandbox (complete [INSTALL.md](../INSTALL.md) Steps 1–2).
+- A running NemoClaw sandbox (complete [INSTALL.md](../../INSTALL.md) Steps 1–2).
 - A Telegram bot token from [@BotFather](https://t.me/BotFather).
 
 ---

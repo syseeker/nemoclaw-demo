@@ -1,4 +1,4 @@
-# Demo 4.0: Deploy AI-Q Blueprint
+# Deploy AI-Q Blueprint
 
 Deploy the AI-Q blueprint with NemoClaw.
 
@@ -11,7 +11,7 @@ Deploy the AI-Q blueprint with NemoClaw.
 
 ## Prerequisites
 
-- A running NemoClaw sandbox (complete [INSTALL.md](../INSTALL.md) Steps 1–2).
+- A running NemoClaw sandbox (complete [INSTALL.md](../../INSTALL.md) Steps 1–2).
 
 ---
 

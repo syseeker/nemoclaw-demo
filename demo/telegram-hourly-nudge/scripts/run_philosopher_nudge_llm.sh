@@ -86,7 +86,7 @@ if [[ -z "$line" ]]; then
   printf '%s' "$raw_out" | tail -c 8000 >&2
   printf '\n' >&2
   if [[ "$agent_rc" == 124 ]]; then
-    die "timed out after ${TIMEOUT_SEC}s (exit 124) — gateway pairing, openshell term approval, or missing SKILL.md? See demo 2.2 Step 3"
+    die "timed out after ${TIMEOUT_SEC}s (exit 124) — gateway pairing, openshell term approval, or missing SKILL.md? See demo telegram-hourly-nudge Step 3"
   fi
   die "agent exit ${agent_rc}: expected one line starting with 'Ting tong'"
 fi

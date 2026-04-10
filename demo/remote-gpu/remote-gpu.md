@@ -1,4 +1,4 @@
-# Demo 3.0: Deploy to a Remote GPU Instance
+# Deploy to a Remote GPU Instance
 
 Run NemoClaw on a remote GPU instance through Brev. The deploy command
 provisions the VM, installs dependencies, and connects you to a running sandbox.
@@ -18,7 +18,7 @@ provisions the VM, installs dependencies, and connects you to a running sandbox.
 
 - Brev CLI installed and authenticated (`brev login`).
 - An NVIDIA API key from [build.nvidia.com](https://build.nvidia.com).
-- NemoClaw installed locally (complete [INSTALL.md](../INSTALL.md) Steps 1–2).
+- NemoClaw installed locally (complete [INSTALL.md](../../INSTALL.md) Steps 1–2).
 
 ---
 

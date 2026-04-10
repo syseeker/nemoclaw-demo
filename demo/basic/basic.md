@@ -1,4 +1,4 @@
-# Demo 1.0: Basic — Sandbox Policy & Network Control
+# Basic — Sandbox Policy & Network Control
 
 Walk through NemoClaw's core sandbox features: deny-by-default network policy,
 real-time request approval, inference routing, and custom policy creation.
@@ -22,7 +22,7 @@ before moving on to more advanced scenarios.
 | **OpenClaw** | Agent that uses LLM inference and tools |
 | **Nemotron 3 Super** | 120B reasoning model via NVIDIA NIM |
 
-> **Setup first?** See [INSTALL.md](../INSTALL.md) for prerequisites and installation. For DNS issues see [FAQ](../FAQ.md#3-how-do-i-fix-dns-inside-the-sandbox).
+> **Setup first?** See [INSTALL.md](../../INSTALL.md) for prerequisites and installation. For DNS issues see [FAQ](../../FAQ.md#3-how-do-i-fix-dns-inside-the-sandbox).
 
 ---
 
@@ -104,7 +104,7 @@ openclaw agent --agent main --local -m "Run: curl -s 'https://www.google.com/fin
 
 Use this if Yahoo Finance returns HTTP 429 (rate-limited).
 
-> **Why specify curl in the prompt?** See [FAQ](../FAQ.md#4-why-does-web_fetch-fail-when-curl-works) for details
+> **Why specify curl in the prompt?** See [FAQ](../../FAQ.md#4-why-does-web_fetch-fail-when-curl-works) for details
 > on `web_fetch` vs `exec` and binary restrictions.
 
 ---
