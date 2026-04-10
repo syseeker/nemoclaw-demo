@@ -15,3 +15,4 @@ so the CLI and gateway agree on the same path. See
 | Skill | Directory |
 | --- | --- |
 | Philosopher nudge (LLM-themed Telegram line) | [philosopher-nudge/](philosopher-nudge/) |
+| Chinese jokes (中文笑话 for Telegram, with dialect flavor) | [chinese-jokes/](chinese-jokes/) |

@@ -25,13 +25,13 @@ Example: `Ting tong, 2026-04-04 14:00 +08 — Is rest part of work, or its inter
 See [How it fits together](#how-it-fits-together) at the end for a diagram of the
 full flow (Cron → Host → OpenShell → Sandbox/OpenClaw → Telegram → bridge).
 
-**Reference:** [Telegram bridge (NVIDIA)](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html) · [Demo 2.0 — bridge](../telegram-bridge/telegram-bridge.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
+**Reference:** [Telegram bridge (NVIDIA)](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html) · [Telegram bridge demo](../telegram-bridge/telegram-bridge.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
 
 ---
 
 ## Before you start
 
-- Finish a normal **Telegram + NemoClaw** setup ([Demo 2.0](../telegram-bridge/telegram-bridge.md)):
+- Finish a normal **Telegram + NemoClaw** setup ([Telegram bridge demo](../telegram-bridge/telegram-bridge.md)):
   you need a bot token, `nemoclaw start`, and a working sandbox with `openclaw`.
 - **On the host** (same machine as `openshell` / `cron`): Python 3, `ssh`, `base64`.
 - Know **one Telegram chat id** where the bot may post (DM or group; often a
@@ -41,7 +41,7 @@ full flow (Cron → Host → OpenShell → Sandbox/OpenClaw → Telegram → bri
 
 ## Step 1 — Keep the bridge running
 
-Replies in Telegram go through the bridge, same as 2.0.
+Replies in Telegram go through the bridge, same as the [Telegram bridge demo](../telegram-bridge/telegram-bridge.md).
 
 ```bash
 export TELEGRAM_BOT_TOKEN="…"
@@ -75,6 +75,63 @@ bash "${HOME}/NemoClaw/test/e2e/e2e-cloud-experimental/features/skill/add-sandbo
 **Or** open a shell in the sandbox (`nemoclaw <sandbox> connect`), create the
 dirs, and paste the skill into both paths (e.g. `nano`). **Or** use
 `openshell sandbox upload` from the host — see [FAQ: install skill other ways](#faq-install-skill-other-ways).
+
+---
+
+## Step 2b — Upload `AGENTS.md` (feedback recording)
+
+The agent inside the sandbox reads
+`~/.openclaw/workspace/AGENTS.md` at the start of **every** session —
+including Telegram bridge replies. This repo ships a template
+[`templates/AGENTS.md`](templates/AGENTS.md) that includes a
+**Telegram Feedback** section telling the agent to record every reply
+(who, what, sentiment) into its daily memory log
+(`memory/YYYY-MM-DD.md`). Both the philosopher-nudge and chinese-jokes
+skills read that memory before generating, so the agent learns which
+topics and styles land well over time.
+
+**Upload from host** (replace `<sandbox>` with your sandbox name):
+
+```bash
+openshell sandbox upload "<sandbox>" \
+  "${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/templates/AGENTS.md" \
+  /sandbox/.openclaw/workspace/
+```
+
+> **Already have a customized `AGENTS.md`?** Don't overwrite it. Instead,
+> append just the feedback section. Connect to the sandbox and run:
+>
+> ```bash
+> nemoclaw <sandbox> connect
+> cat >> ~/.openclaw/workspace/AGENTS.md << 'EOF'
+>
+> ## Telegram Feedback — Record Every Reply
+>
+> When a user **replies** to any message in Telegram (via the NemoClaw bridge),
+> **append** a short entry to the daily memory log
+> (`memory/YYYY-MM-DD.md`, where `YYYY-MM-DD` is today's date).
+>
+> Each entry should include:
+>
+> - **Timestamp** (HH:MM)
+> - **Who** replied (Telegram display name if available)
+> - **What** they said (brief summary or direct quote if short)
+> - **Sentiment** — liked / disliked / suggested topic / asked follow-up
+> - **Action** — any follow-up you took (e.g. replied with another joke, clarified, switched topic)
+>
+> This applies to **all** scheduled nudges (philosopher nudge, joke nudge, or
+> any future nudge type). Recording feedback lets you learn what lands well and
+> adjust your tone, topics, and style over time.
+> EOF
+> ```
+
+**Verify** (inside the sandbox):
+
+```bash
+tail -5 ~/.openclaw/workspace/AGENTS.md
+```
+
+You should see the "Telegram Feedback — Record Every Reply" heading.
 
 ---
 
@@ -163,8 +220,7 @@ This opens a text editor (often nano or vi). Add these **two lines** at the
 bottom of the file (adjust the home path if yours is not `/home/ubuntu`):
 
 ```cron
-CRON_TZ=Asia/Singapore
-0 6-23 * * * /home/ubuntu/bin/run-telegram-nudge.sh >> /home/ubuntu/.local/log/telegram-nudge.log 2>&1
+0 0-15,22-23 * * * /home/ubuntu/bin/run-telegram-nudge.sh >> /home/ubuntu/.local/log/telegram-nudge.log 2>&1
 ```
 
 Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X` in nano; `:wq` in vi).
@@ -232,6 +288,13 @@ tail -f /tmp/nemoclaw-services-clawpit/telegram-bridge.log
 - **Multiple themes per day**: create several wrapper copies
   (`run-nudge-work.sh`, `run-nudge-games.sh`) each sourcing a different `.env`,
   then point separate crontab lines at them.
+- **Switch to Chinese jokes**: install the `chinese-jokes` skill
+  ([`skills/chinese-jokes/SKILL.md`](skills/chinese-jokes/SKILL.md)) into the
+  sandbox (same process as Step 2), then change the LLM script line in your
+  cron wrapper from `run_philosopher_nudge_llm.sh` to `run_joke_nudge_llm.sh`.
+  Jokes are localized for Malaysian / Singaporean Chinese and end with
+  `哈哈` or `Meow~~`. Set `JOKE_TOPIC` in your `.env` to force a category
+  (e.g. `方言梗`, `吃的`, `家庭`) or leave it empty for random.
 
 ---
 
@@ -404,13 +467,13 @@ test -f /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md && grep -m1 '^name:
 openclaw skills list
 ```
 
-Or use `openclaw tui` and ask in plain language, e.g. *Use the philosopher-nudge skill with theme work; one Ting tong line.* Telegram usually wants **sentences**, not `/commands` — see the skill and [Demo 2.0](../telegram-bridge/telegram-bridge.md).
+Or use `openclaw tui` and ask in plain language, e.g. *Use the philosopher-nudge skill with theme work; one Ting tong line.* Telegram usually wants **sentences**, not `/commands` — see the skill and the [Telegram bridge demo](../telegram-bridge/telegram-bridge.md).
 
 <a id="faq-hang-or-pairing"></a>
 
 ### 8. The smoke test or cron run seems to hang
 
-1. **Gateway / pairing** — complete device approval if prompted ([2.0](../telegram-bridge/telegram-bridge.md)).
+1. **Gateway / pairing** — complete device approval if prompted ([Telegram bridge demo](../telegram-bridge/telegram-bridge.md)).
 2. On the **host**, run `openshell term` and approve egress if asked.
 3. Confirm `SKILL.md` exists in the sandbox paths from Step 2.
 4. First model call can take minutes; default cap is **180s** (`RUN_PHILOSOPHER_NUDGE_TIMEOUT_SEC` in the env file).
@@ -435,9 +498,19 @@ Or use `openclaw tui` and ask in plain language, e.g. *Use the philosopher-nudge
 
 <a id="faq-soul-identity"></a>
 
-### 11. Do I need `SOUL.md` / `IDENTITY.md` / `USER.md`?
+### 11. Do I need `SOUL.md` / `IDENTITY.md` / `USER.md` / `AGENTS.md`?
 
-**No** for this demo. The skill's `SKILL.md` is enough for the nudge format. Add workspace persona files only if you want the **same** tone on **every** bridge reply; see [workspace files](https://docs.nvidia.com/nemoclaw/latest/workspace/workspace-files.html).
+**`SOUL.md` / `IDENTITY.md` / `USER.md`** — optional for this demo. The
+skill's `SKILL.md` is enough for the nudge format. Add workspace persona
+files only if you want the **same** tone on **every** bridge reply; see
+[workspace files](https://docs.nvidia.com/nemoclaw/latest/workspace/workspace-files.html).
+
+**`AGENTS.md`** — **recommended**. The template in this repo
+([`templates/AGENTS.md`](templates/AGENTS.md)) includes a
+**Telegram Feedback** section that tells the agent to record every Telegram
+reply into `memory/YYYY-MM-DD.md`. Without it, the agent ignores user
+feedback because skills are only loaded during cron — not during bridge
+replies. See [Step 2b](#step-2b--upload-agentsmd-feedback-recording).
 
 <a id="faq-allowed-chat-ids-group"></a>
 
@@ -449,6 +522,6 @@ Comma-separated numeric ids (e.g. `-100…` for supergroups). Use [@getidsbot](h
 
 ## See also
 
-- [Demo 2.0 — Telegram bridge](../telegram-bridge/telegram-bridge.md)
+- [Telegram bridge demo](../telegram-bridge/telegram-bridge.md)
 - [Demo skills README](skills/README.md)
 - [INSTALL.md](../../INSTALL.md)
