@@ -63,18 +63,104 @@ OpenClaw should see it under **both** of these inside the sandbox (create dirs i
 - `/sandbox/.openclaw/skills/philosopher-nudge/SKILL.md`
 - `$HOME/.openclaw/skills/philosopher-nudge/SKILL.md` (often `/home/sandbox/...`)
 
-**Fast path** (if you have the NemoClaw repo on the host):
+Set these variables once (reuse them throughout this guide):
 
 ```bash
-export SANDBOX_NAME="your-sandbox"
-export SKILL_ID="philosopher-nudge"
-export SKILL_FILE="${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md"
-bash "${HOME}/NemoClaw/test/e2e/e2e-cloud-experimental/features/skill/add-sandbox-skill.sh"
+SANDBOX=your-sandbox              # whatever you named your sandbox
+DOCKER_CTR=openshell-cluster-nemoclaw
 ```
 
-**Or** open a shell in the sandbox (`nemoclaw <sandbox> connect`), create the
-dirs, and paste the skill into both paths (e.g. `nano`). **Or** use
-`openshell sandbox upload` from the host — see [FAQ: install skill other ways](#faq-install-skill-other-ways).
+Upload the skill into the sandbox via the NemoClaw Docker container:
+
+```bash
+# Create the skill directory
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- mkdir -p /sandbox/.openclaw/skills/philosopher-nudge
+
+# Upload the skill
+cat ${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md | \
+  docker exec -i $DOCKER_CTR \
+  kubectl exec -i -n openshell $SANDBOX -c agent \
+  -- sh -c 'cat > /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md'
+
+# Fix ownership (kubectl exec runs as root; openclaw runs as sandbox)
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- chown -R sandbox:sandbox /sandbox/.openclaw/skills/philosopher-nudge
+```
+
+Verify it landed:
+
+```bash
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- head -3 /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md
+```
+
+---
+
+## Step 2b — Upload `AGENTS.md` (feedback recording)
+
+The agent inside the sandbox reads
+`~/.openclaw/workspace/AGENTS.md` at the start of **every** session —
+including Telegram bridge replies. This repo ships a template
+[`templates/AGENTS.md`](templates/AGENTS.md) that includes a
+**Telegram Feedback** section telling the agent to record every reply
+(who, what, sentiment) into its daily memory log
+(`memory/YYYY-MM-DD.md`). Both the philosopher-nudge and chinese-jokes
+skills read that memory before generating, so the agent learns which
+topics and styles land well over time.
+
+**Upload from host** (using the same `$SANDBOX` / `$DOCKER_CTR` from Step 2):
+
+```bash
+# Create the workspace directory (if it doesn't exist)
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- mkdir -p /sandbox/.openclaw/workspace
+
+# Upload AGENTS.md
+cat ${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/templates/AGENTS.md | \
+  docker exec -i $DOCKER_CTR \
+  kubectl exec -i -n openshell $SANDBOX -c agent \
+  -- sh -c 'cat > /sandbox/.openclaw/workspace/AGENTS.md'
+
+# Fix ownership (kubectl exec runs as root; openclaw runs as sandbox)
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- chown -R sandbox:sandbox /sandbox/.openclaw/workspace
+```
+
+> **Already have a customized `AGENTS.md`?** Don't overwrite it. Instead,
+> append just the feedback section. Connect to the sandbox and run:
+>
+> ```bash
+> nemoclaw <sandbox> connect
+> cat >> ~/.openclaw/workspace/AGENTS.md << 'EOF'
+>
+> ## Telegram Feedback — Record Every Reply
+>
+> When a user **replies** to any message in Telegram (via the NemoClaw bridge),
+> **append** a short entry to the daily memory log
+> (`memory/YYYY-MM-DD.md`, where `YYYY-MM-DD` is today's date).
+>
+> Each entry should include:
+>
+> - **Timestamp** (HH:MM)
+> - **Who** replied (Telegram display name if available)
+> - **What** they said (brief summary or direct quote if short)
+> - **Sentiment** — liked / disliked / suggested topic / asked follow-up
+> - **Action** — any follow-up you took (e.g. replied with another joke, clarified, switched topic)
+>
+> This applies to **all** scheduled nudges (philosopher nudge, joke nudge, or
+> any future nudge type). Recording feedback lets you learn what lands well and
+> adjust your tone, topics, and style over time.
+> EOF
+> ```
+
+**Verify** (inside the sandbox):
+
+```bash
+tail -5 ~/.openclaw/workspace/AGENTS.md
+```
+
+You should see the "Telegram Feedback — Record Every Reply" heading.
 
 ---
 
@@ -436,27 +522,32 @@ The bridge only appends lines when Telegram delivers `getUpdates` with a **text*
 
 ### 6. How else can I install the skill files?
 
-**Upload from host** (not inside `nemoclaw connect`); destinations are directories; filename stays `SKILL.md`:
+**Upload from host** via `docker exec` + `kubectl exec` (same approach as Step 2):
 
 ```bash
-NEMOCLAW_DEMO_ROOT="${NEMOCLAW_DEMO_ROOT:-${HOME}/NemoClaw-Demo}"
-openshell sandbox upload "<sandbox>" \
-  "${NEMOCLAW_DEMO_ROOT}/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md" \
-  /sandbox/.openclaw/skills/philosopher-nudge/
+SANDBOX=your-sandbox
+DOCKER_CTR=openshell-cluster-nemoclaw
 
-openshell sandbox upload "<sandbox>" \
-  "${NEMOCLAW_DEMO_ROOT}/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md" \
-  /home/sandbox/.openclaw/skills/philosopher-nudge/
+# Create the skill directory
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- mkdir -p /sandbox/.openclaw/skills/philosopher-nudge
+
+# Upload the skill
+cat ${HOME}/NemoClaw-Demo/demo/telegram-hourly-nudge/skills/philosopher-nudge/SKILL.md | \
+  docker exec -i $DOCKER_CTR \
+  kubectl exec -i -n openshell $SANDBOX -c agent \
+  -- sh -c 'cat > /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md'
+
+# Fix ownership (kubectl exec runs as root; openclaw runs as sandbox)
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- chown -R sandbox:sandbox /sandbox/.openclaw/skills/philosopher-nudge
 ```
-
-If `echo $HOME` inside the sandbox is not `/home/sandbox`, use that path for the
-second upload.
 
 **Check the file**:
 
 ```bash
-nemoclaw <sandbox> connect
-test -f /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md && grep -m1 '^name:' "$_"
+docker exec $DOCKER_CTR kubectl exec -n openshell $SANDBOX -c agent \
+  -- head -3 /sandbox/.openclaw/skills/philosopher-nudge/SKILL.md
 ```
 
 <a id="faq-try-skill"></a>

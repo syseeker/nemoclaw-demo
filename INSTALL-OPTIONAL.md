@@ -63,7 +63,7 @@ openshell inference set --provider vllm --model <model-name>
 ```
 *(Works with any model vLLM supports!)*
 
-For a detailed, step-by-step guide (including how to set up a GPU VM on Brev and connect from NemoClaw), see [demo/remote-gpu/remote-gpu.md](demo/remote-gpu/remote-gpu.md).
+For a detailed, step-by-step guide (including how to set up an H200 GPU instance on Brev with self-hosted NIM hot-swapping), see [demo/remote-gpu/remote-gpu.md](demo/remote-gpu/remote-gpu.md).
 
 ---
 
