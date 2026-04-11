@@ -247,24 +247,32 @@ to the GPU box. This is a one-time setup.
 source ~/.config/nim-remote-swap.env
 
 openshell provider create --name nim-qwen \
-  --type nvidia --credential NGC_API_KEY \
-  --config base_url=http://${NIM_GPU_IP}:8000/v1
+  --type openai \
+  --credential OPENAI_API_KEY=not-required \
+  --config OPENAI_BASE_URL=http://${NIM_GPU_IP}:8000/v1
 
 openshell provider create --name nim-glm \
-  --type nvidia --credential NGC_API_KEY \
-  --config base_url=http://${NIM_GPU_IP}:8001/v1
+  --type openai \
+  --credential OPENAI_API_KEY=not-required \
+  --config OPENAI_BASE_URL=http://${NIM_GPU_IP}:8001/v1
 
 openshell provider create --name nim-nemotron \
-  --type nvidia --credential NGC_API_KEY \
-  --config base_url=http://${NIM_GPU_IP}:8002/v1
+  --type openai \
+  --credential OPENAI_API_KEY=not-required \
+  --config OPENAI_BASE_URL=http://${NIM_GPU_IP}:8002/v1
 
 openshell provider create --name nim-kimi \
-  --type nvidia --credential NGC_API_KEY \
-  --config base_url=http://${NIM_GPU_IP}:8003/v1
+  --type openai \
+  --credential OPENAI_API_KEY=not-required \
+  --config OPENAI_BASE_URL=http://${NIM_GPU_IP}:8003/v1
 
 openshell provider list   # verify all created
 ```
 
+> **Reference**: [Configure Inference Routing](https://docs.nvidia.com/openshell/latest/inference/configure)
+> — the `--type openai --config OPENAI_BASE_URL=...` pattern works with
+> any OpenAI-compatible endpoint.
+>
 > If you get `AlreadyExists` errors, the providers are already registered.
 > To re-create with different settings, delete first:
 > `openshell provider delete nim-qwen` then re-run the create command.
@@ -309,14 +317,38 @@ nim-remote-swap.sh reset
 
 ### Verify from inside the sandbox
 
+Connect to the sandbox and call `inference.local` directly with `curl`.
+The gateway rewrites the model and credentials before forwarding, so any
+`model` value works.
+
 ```bash
 nemoclaw <name> connect
-openclaw agent --agent main --local \
-  -m "What model are you? Respond with your model name only." \
-  --session-id swap-test-1
+curl -sk https://inference.local/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"anything","messages":[{"role":"user","content":"Who created you? What is your model name?"}],"max_tokens":100}'
 ```
 
-Use a different `--session-id` each time to avoid cached model state.
+A successful response confirms the full chain:
+
+```
+sandbox (curl) → inference.local → OpenShell gateway → remote NIM
+```
+
+Example output after `nim-remote-swap.sh switch qwen`:
+
+```json
+{
+  "model": "qwen/qwen3.5-397b-a17b",
+  "choices": [{
+    "message": {
+      "content": "I am Qwen3.5, a large language model developed by Tongyi Lab"
+    }
+  }]
+}
+```
+
+After `nim-remote-swap.sh reset`, the same `curl` returns the default
+cloud model instead.
 
 ---
 

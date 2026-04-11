@@ -38,6 +38,85 @@ declare -A NIM_IPC=(
 
 ALIASES=(qwen glm nemotron kimi)
 
+preflight() {
+  local errors=0
+
+  # Driver version check — NIM containers require CUDA 13.0 → driver 580+
+  if ! command -v nvidia-smi &>/dev/null; then
+    echo "[preflight] FAIL: nvidia-smi not found. No NVIDIA driver installed."
+    return 1
+  fi
+
+  local driver_ver major
+  driver_ver=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -1)
+  major=${driver_ver%%.*}
+  if [[ "$major" -lt 580 ]]; then
+    echo "[preflight] FAIL: Driver $driver_ver too old. Need 580+ for CUDA 13.0."
+    echo "           Run: ./bootstrap-gpu.sh"
+    errors=$((errors + 1))
+  else
+    echo "[preflight] OK: Driver $driver_ver"
+  fi
+
+  # Driver/library version mismatch (kernel module vs userspace)
+  if nvidia-smi &>/dev/null; then
+    echo "[preflight] OK: nvidia-smi responds"
+  else
+    echo "[preflight] FAIL: nvidia-smi not responding. Driver mismatch? Reboot needed."
+    errors=$((errors + 1))
+  fi
+
+  # GPU persistence mode
+  local pm
+  pm=$(nvidia-smi --query-gpu=persistence_mode --format=csv,noheader 2>/dev/null | head -1)
+  if [[ "$pm" != "Enabled" ]]; then
+    echo "[preflight] WARN: GPU persistence mode disabled. Enabling..."
+    sudo nvidia-smi -pm 1 2>/dev/null || {
+      echo "[preflight] FAIL: Could not enable persistence mode."
+      errors=$((errors + 1))
+    }
+  else
+    echo "[preflight] OK: Persistence mode enabled"
+  fi
+
+  # nvidia-persistenced daemon
+  if systemctl is-active --quiet nvidia-persistenced 2>/dev/null; then
+    echo "[preflight] OK: nvidia-persistenced running"
+  else
+    echo "[preflight] WARN: nvidia-persistenced not running. Starting..."
+    sudo systemctl start nvidia-persistenced 2>/dev/null || {
+      echo "[preflight] FAIL: Could not start nvidia-persistenced."
+      errors=$((errors + 1))
+    }
+  fi
+
+  # Fabric Manager (required for NVSwitch multi-GPU)
+  if systemctl is-active --quiet nvidia-fabricmanager 2>/dev/null; then
+    echo "[preflight] OK: nvidia-fabricmanager running"
+  else
+    echo "[preflight] WARN: nvidia-fabricmanager not running. Starting..."
+    sudo systemctl start nvidia-fabricmanager 2>/dev/null || {
+      echo "[preflight] FAIL: Could not start nvidia-fabricmanager."
+      echo "           Install: sudo apt install nvidia-fabricmanager-580"
+      errors=$((errors + 1))
+    }
+  fi
+
+  # NGC_API_KEY
+  if [[ -z "${NGC_API_KEY:-}" ]]; then
+    echo "[preflight] FAIL: NGC_API_KEY not set."
+    errors=$((errors + 1))
+  else
+    echo "[preflight] OK: NGC_API_KEY set"
+  fi
+
+  if [[ $errors -gt 0 ]]; then
+    echo "[preflight] $errors issue(s) found. Fix before starting NIM."
+    return 1
+  fi
+  echo "[preflight] All checks passed."
+}
+
 usage() {
   cat <<HELP
 Usage: nim-swap.sh <command> [alias]
@@ -51,6 +130,7 @@ Commands:
   stop-all          Stop all models
   stop-others <a>   Stop everything except <alias> (cold swap)
   status            Show running models and ports
+  preflight         Check GPU driver, persistence, NGC key
 HELP
   exit 1
 }
@@ -85,6 +165,8 @@ start_model() {
     echo "[$alias] Already running on port $port."
     return 0
   fi
+
+  preflight || return 1
 
   docker rm "$name" 2>/dev/null || true
   mkdir -p "$NIM_CACHE"
@@ -159,5 +241,6 @@ case "$1" in
     done
     ;;
   status) status ;;
+  preflight) preflight ;;
   *) usage ;;
 esac

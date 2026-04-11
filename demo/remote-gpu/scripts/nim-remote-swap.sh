@@ -3,11 +3,12 @@
 #
 # Uses openshell provider + inference set for hot-swapping. Each remote
 # model has a pre-registered provider (nim-qwen, nim-glm, etc.) with
-# base_url pointing to the GPU box. No SSH tunnels.
+# OPENAI_BASE_URL pointing to the GPU box.
 #
 # Providers must be created first (one-time setup):
-#   openshell provider create --name nim-qwen --type nvidia \
-#     --credential NGC_API_KEY --config base_url=http://<gpu-ip>:8000/v1
+#   openshell provider create --name nim-qwen --type openai \
+#     --credential OPENAI_API_KEY=not-required \
+#     --config OPENAI_BASE_URL=http://<gpu-ip>:8000/v1
 set -euo pipefail
 
 CONFIG="${NIM_REMOTE_SWAP_ENV:-$HOME/.config/nim-remote-swap.env}"
@@ -15,8 +16,7 @@ CONFIG="${NIM_REMOTE_SWAP_ENV:-$HOME/.config/nim-remote-swap.env}"
 
 GPU_HOST="${NIM_GPU_HOST:-nim-gpu}"
 
-DEFAULT_PROVIDER="nvidia-prod"
-DEFAULT_MODEL="nvidia/nemotron-3-super-120b-a12b"
+DEFAULT_PROVIDER="${NIM_DEFAULT_PROVIDER:-nvidia-prod}"
 
 declare -A NIM_PROVIDERS=(
   [qwen]="nim-qwen"
@@ -37,14 +37,14 @@ usage() {
 Usage: nim-remote-swap.sh <command> [alias]
 
 Switch between cloud inference and self-hosted NIMs on the GPU box.
-Uses openshell inference set for hot-swapping (no SSH tunnels).
+Uses openshell inference set for hot-swapping.
 
 Commands:
   switch <alias>    Route inference to a remote NIM (qwen|glm|nemotron|kimi).
                     Starts the model on the GPU box if needed, then
                     runs: openshell inference set --provider nim-<alias>
-  reset             Restore default cloud inference ($DEFAULT_PROVIDER).
-                    Runs: openshell inference set --provider $DEFAULT_PROVIDER
+  reset             Restore default cloud provider ($DEFAULT_PROVIDER).
+                    Runs: openshell inference update --provider $DEFAULT_PROVIDER
   start <alias>     Start a model on the GPU box (without switching to it)
   stop <alias>      Stop a model on the GPU box
   stop-all          Stop all models on the GPU box
@@ -74,11 +74,12 @@ switch_to() {
 }
 
 reset_to_default() {
-  echo "[cpu] Restoring cloud inference → $DEFAULT_PROVIDER / $DEFAULT_MODEL"
-  openshell inference set --provider "$DEFAULT_PROVIDER" --model "$DEFAULT_MODEL"
+  echo "[cpu] Restoring cloud provider → $DEFAULT_PROVIDER"
+  openshell inference update --provider "$DEFAULT_PROVIDER"
 
   echo ""
-  echo "ACTIVE: $DEFAULT_PROVIDER / $DEFAULT_MODEL (cloud)"
+  echo "ACTIVE: $DEFAULT_PROVIDER (cloud)"
+  openshell inference get
 }
 
 show_status() {
