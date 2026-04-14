@@ -218,7 +218,7 @@ openshell policy get --full <sandbox-name> | grep google_calendar
 
 ```bash
 nemoclaw <sandbox-name> connect
-/sandbox/.config/gogcli/bin/gog calendar events list --max 3
+gog calendar events --max 3
 ```
 
 If this returns JSON with your calendar events, you're ready.
