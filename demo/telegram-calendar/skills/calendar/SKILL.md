@@ -24,6 +24,21 @@ All commands output JSON. Binary: `/sandbox/.config/gogcli/bin/gog`.
 /sandbox/.config/gogcli/bin/gog calendar events
 /sandbox/.config/gogcli/bin/gog calendar events --max 5
 
+# Today's events
+/sandbox/.config/gogcli/bin/gog calendar events --today
+
+# Tomorrow's events
+/sandbox/.config/gogcli/bin/gog calendar events --tomorrow
+
+# This week's events
+/sandbox/.config/gogcli/bin/gog calendar events --week
+
+# Next N days
+/sandbox/.config/gogcli/bin/gog calendar events --days 7
+
+# Date range
+/sandbox/.config/gogcli/bin/gog calendar events --from "2026-04-15" --to "2026-04-20"
+
 # List calendars
 /sandbox/.config/gogcli/bin/gog calendar calendars
 
@@ -64,6 +79,7 @@ All commands output JSON. Binary: `/sandbox/.config/gogcli/bin/gog`.
 
 ## Notes
 
+- **IMPORTANT**: Always use `gog calendar events`, never `gog calendar events list`. The `list` subcommand causes 404 errors with time filters like `--today` or `--tomorrow`.
 - All output is JSON by default (GOG_JSON=1 is set).
 - `primary` refers to the user's default calendar. Use `gog calendar calendars` to list all calendars and their IDs.
 - Calendar create sends invites automatically when `--attendees` is provided.
