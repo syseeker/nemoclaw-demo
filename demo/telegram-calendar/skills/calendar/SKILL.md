@@ -21,8 +21,8 @@ All commands output JSON. Binary: `/sandbox/.config/gogcli/bin/gog`.
 
 ```bash
 # List upcoming events (all calendars)
-/sandbox/.config/gogcli/bin/gog calendar events list
-/sandbox/.config/gogcli/bin/gog calendar events list --max 5
+/sandbox/.config/gogcli/bin/gog calendar events
+/sandbox/.config/gogcli/bin/gog calendar events --max 5
 
 # List calendars
 /sandbox/.config/gogcli/bin/gog calendar calendars
