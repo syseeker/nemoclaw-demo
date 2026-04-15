@@ -1,19 +1,20 @@
-# Telegram Bridge — HEARTBEAT & CRON Job
+# Telegram Bridge — HEARTBEAT Health Monitor
 
 Interact with the OpenClaw agent through Telegram instead of the terminal.
-This demo covers two patterns: a HEARTBEAT check and a scheduled CRON Job.
+This demo sets up the Telegram bridge and configures a HEARTBEAT that posts
+periodic sandbox health summaries to a Telegram chat.
 
 ## What you will learn
 
 - How to create a Telegram bot and connect it to the sandbox
 - Starting and stopping the Telegram bridge and cloudflared tunnel
 - Setting up a HEARTBEAT for periodic health checks
-- Scheduling recurring agent tasks with CRON Jobs
-- Switching the LLM model at runtime via a Telegram message
-- Tracking token usage with real-time Telegram updates
+- Attaching a Markdown file to heartbeat messages
 - Restricting bot access by Telegram chat ID
 
 > **Reference**: [Set Up the Telegram Bridge](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html)
+>
+> **See also**: [Telegram hourly nudge](../telegram-hourly-nudge/hourly-nudge.md) (CRON jobs) · [Remote GPU](../remote-gpu/remote-gpu.md) (model switching) · [Token budget](../token-budget/token-budget-guide.md) (token usage tracking)
 
 ---
 
@@ -23,8 +24,6 @@ This demo covers two patterns: a HEARTBEAT check and a scheduled CRON Job.
 - A Telegram bot token from [@BotFather](https://t.me/BotFather).
 
 ---
-
-@TODO: BP & Jovan
 
 ## Step 1: Create a Telegram Bot
 
@@ -113,91 +112,6 @@ Replace `<sandbox>` with your default sandbox name (often `nemoclaw`).
 
 ### Optional Markdown file (`heartbeat.md`)
 Save any **`.md` on the host** where `nemoclaw start` runs (e.g. `$HOME/heartbeat.md`) and set **`HEARTBEAT_MARKDOWN_FILE`** to that path. Each tick you still get the **health check** message first; **then** the file is sent as **follow-up** Telegram Markdown (with plain-text retry if Telegram rejects the markup), unless **`HEARTBEAT_MARKDOWN_AS_PLAIN_APPEND=1`**, in which case health + `---` + file contents arrive in **one** message as plain text. 
-
----
-@TODO: BP
-## Use Case B: CRON Job — Daily NVIDIA Stock Summary
-
-**Scenario**: Schedule the agent to fetch the NVIDIA stock price every morning
-at 9:00 AM and post a summary to your Telegram chat.
-
-Set up a cron job on the host that sends a prompt to the agent via the
-Telegram bridge:
-
-```bash
-crontab -e
-```
-
-Add the following entry:
-
-```cron
-0 9 * * * curl -s -X POST http://localhost:<bridge-port>/api/message \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Fetch the current NVIDIA stock price and give me a one-line summary with the price, change, and percentage."}'
-```
-
-**What to expect in Telegram**:
-
-- A daily message from the bot at 9:00 AM with a stock summary, e.g.:
-  *"NVDA: $142.53 (+$2.15, +1.53%) — trading near session highs."*
-
-**What to show**:
-
-- The cron job firing on schedule (use `* * * * *` for a quick test every minute)
-- The agent fetching live data and formatting a response
-- The result appearing in the Telegram chat without any manual input
-
----
-
-## Use Case C: Switch LLM via Telegram
-
-**Scenario**: Send a Telegram message to switch the inference model at runtime
-without SSH-ing into the instance.
-
-**Example messages to the bot**:
-
-- *"Switch to Nemotron 3 Nano for faster responses"*
-- *"Switch back to Nemotron 3 Super for better reasoning"*
-
-The agent uses the `exec` tool to run the model switch:
-
-```bash
-openshell inference set --provider nvidia-nim --model nvidia/nemotron-3-nano-30b-a3b
-```
-
-**What to expect in Telegram**:
-
-- The bot confirms the model switch
-- Subsequent responses come from the new model
-
-**What to show**:
-
-- Send a complex reasoning prompt → agent responds using Super (120B)
-- Switch to Nano via Telegram message
-- Send the same prompt → faster response, possibly less detailed
-- Switch back to Super via Telegram message → full reasoning restored
-
----
-
-## Use Case D: Token Usage Tracker
-
-**Scenario**: Monitor token consumption in real time. The agent tracks
-cumulative token usage and posts an update to Telegram whenever the count
-changes — useful for cost awareness and quota management.
-
-<!-- TODO: implementation details — poll inference logs or gateway metrics
-     for token counts, post delta to Telegram when threshold is crossed -->
-
-**Example Telegram updates**:
-
-- *"Token usage: 12,450 total (+1,230 since last update) — model: Nemotron 3 Super"*
-- *"Token usage: 15,800 total (+3,350 since last update) — model: Nemotron 3 Nano"*
-
-**What to show**:
-
-- Send a few prompts via Telegram and watch the token counter update
-- Switch models (Use Case C) and compare token consumption per prompt
-- Set a token budget threshold and get an alert when approaching the limit
 
 ---
 
