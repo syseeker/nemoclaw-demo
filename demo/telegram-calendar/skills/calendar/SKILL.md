@@ -1,86 +1,93 @@
 ---
 name: calendar
-description: "Google Calendar CLI at /sandbox/.config/gogcli/bin/gog. Use when: user asks about calendar events, schedule meetings, check availability, RSVP, focus time, out of office, free/busy, conflicts, working location. Run as: /sandbox/.config/gogcli/bin/gog calendar <subcommand>."
+description: "Google Calendar CLI. NEVER use 'events list' — always use 'events'. Run as: gog calendar events [flags]. Binary: /sandbox/.config/gogcli/bin/gog"
 ---
 
-# gog calendar -- Google Calendar CLI
+# gog calendar — Google Calendar CLI
 
-Manage Google Calendar: list events, create/update/delete events, check availability, RSVP, focus time, out of office.
-All commands output JSON. Binary: `/sandbox/.config/gogcli/bin/gog`.
+Binary: `/sandbox/.config/gogcli/bin/gog`
 
-## When to Use
+**CRITICAL: The command is `gog calendar events`, NEVER `gog calendar events list`.
+Using `events list` causes 404 errors. Always omit `list`.**
 
-- "What's on my calendar today?"
-- "Schedule a meeting with X on Friday at 2pm"
-- "Am I free tomorrow between 2-4pm?"
-- "Set focus time Thursday afternoon"
-- "Cancel the 3pm meeting"
-- "RSVP yes to the team lunch"
-
-## Commands
+## Events — Query
 
 ```bash
-# List upcoming events (all calendars)
-/sandbox/.config/gogcli/bin/gog calendar events
-/sandbox/.config/gogcli/bin/gog calendar events --max 5
+# Upcoming events (primary calendar)
+gog calendar events
+gog calendar events --max 5
 
-# Today's events
-/sandbox/.config/gogcli/bin/gog calendar events --today
-
-# Tomorrow's events
-/sandbox/.config/gogcli/bin/gog calendar events --tomorrow
-
-# This week's events
-/sandbox/.config/gogcli/bin/gog calendar events --week
+# Today / tomorrow / this week
+gog calendar events --today
+gog calendar events --tomorrow
+gog calendar events --week
 
 # Next N days
-/sandbox/.config/gogcli/bin/gog calendar events --days 7
+gog calendar events --days 7
 
 # Date range
-/sandbox/.config/gogcli/bin/gog calendar events --from "2026-04-15" --to "2026-04-20"
+gog calendar events --from "2026-04-15" --to "2026-04-20"
 
-# List calendars
-/sandbox/.config/gogcli/bin/gog calendar calendars
+# Specific calendar by ID (use --cal flag)
+gog calendar events --cal="<calendar-id>"
+gog calendar events --cal="<calendar-id>" --tomorrow
+gog calendar events --cal="<calendar-id>" --max 10
+
+# Specific calendar by passing ID as first argument
+gog calendar events "<calendar-id>" --tomorrow
+
+# All calendars at once
+gog calendar events --all --today
+
+# List available calendars and their IDs
+gog calendar calendars
 
 # Search events by keyword
-/sandbox/.config/gogcli/bin/gog calendar search "standup"
+gog calendar search "standup"
+```
 
-# Create event with attendees
-/sandbox/.config/gogcli/bin/gog calendar create primary \
+## Events — Create / Update / Delete
+
+```bash
+# Create event
+gog calendar create primary \
   --title "Team standup" \
   --start "2026-04-10T09:00:00" \
   --duration 30m \
   --attendees "alice@co.com,bob@co.com"
 
 # Update an event
-/sandbox/.config/gogcli/bin/gog calendar update primary <eventId> --title "New title"
+gog calendar update primary <eventId> --title "New title"
 
 # Delete an event
-/sandbox/.config/gogcli/bin/gog calendar delete primary <eventId>
-
-# Check availability (free/busy)
-/sandbox/.config/gogcli/bin/gog calendar freebusy colleague@company.com
-
-# Find scheduling conflicts
-/sandbox/.config/gogcli/bin/gog calendar conflicts
+gog calendar delete primary <eventId>
 
 # RSVP to an invitation
-/sandbox/.config/gogcli/bin/gog calendar respond primary <eventId> --status accepted
+gog calendar respond primary <eventId> --status accepted
+```
+
+## Other Commands
+
+```bash
+# Check availability (free/busy)
+gog calendar freebusy colleague@company.com
+
+# Find scheduling conflicts
+gog calendar conflicts
 
 # Create focus time block
-/sandbox/.config/gogcli/bin/gog calendar focus-time --from "2026-04-10T14:00:00" --to "2026-04-10T17:00:00"
+gog calendar focus-time --from "2026-04-10T14:00:00" --to "2026-04-10T17:00:00"
 
 # Set out of office
-/sandbox/.config/gogcli/bin/gog calendar out-of-office --from "2026-04-14" --to "2026-04-18"
+gog calendar out-of-office --from "2026-04-14" --to "2026-04-18"
 
 # Set working location
-/sandbox/.config/gogcli/bin/gog calendar working-location --from "2026-04-10" --to "2026-04-10" --type home
+gog calendar working-location --from "2026-04-10" --to "2026-04-10" --type home
 ```
 
 ## Notes
 
-- **IMPORTANT**: Always use `gog calendar events`, never `gog calendar events list`. The `list` subcommand causes 404 errors with time filters like `--today` or `--tomorrow`.
 - All output is JSON by default (GOG_JSON=1 is set).
-- `primary` refers to the user's default calendar. Use `gog calendar calendars` to list all calendars and their IDs.
-- Calendar create sends invites automatically when `--attendees` is provided.
+- `primary` refers to the user's default calendar. Use `gog calendar calendars` to find other calendar IDs.
+- To query a non-primary calendar, use `--cal="<id>"` or pass the ID as the first argument.
 - Token is managed automatically by the host-side push daemon.
