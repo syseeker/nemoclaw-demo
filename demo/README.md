@@ -9,6 +9,7 @@
 | [Google Workspace](google-workspace/google-workspace-guide.md) | Google Calendar, Gmail, Drive, Sheets, Contacts, Tasks via `gog` CLI |
 | [Telegram + Calendar](telegram-calendar/telegram-calendar-guide.md) | CRUD Google Calendar events from Telegram |
 | [Token Budget](token-budget/token-budget-guide.md) | Session token usage cap — monitor and limit agent token consumption |
+| [Voice Guide](voice-guide-demo/voice-agent/SETUP_BREV_LAPTOP.md) | WebRTC voice guide for laptop browser + Brev instance using hosted NVIDIA endpoints and TURN |
 | [AI-Q Blueprint](aiq-blueprint/aiq-blueprint.md) | Deploy AI-Q blueprint with NemoClaw |
 
 > **Prerequisites**: Complete [INSTALL.md](../INSTALL.md) Steps 1–2 before running any demo.

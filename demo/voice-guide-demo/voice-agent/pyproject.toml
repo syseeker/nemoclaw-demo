@@ -1,0 +1,133 @@
+[project]
+name = "nvidia-pipecat"
+version = "0.4.0"
+description = "NVIDIA Pipecat SDK"
+readme = "NVIDIA_PIPECAT.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "NVIDIA ACE", email = "ace-dev@exchange.nvidia.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pipecat-ai[silero,openai,runner,webrtc,websocket,nvidia]==0.0.98",
+    "pyyaml>=6.0.2",
+    "rapidfuzz>=3.14.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nvidia_pipecat"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "examples/*/node_modules",
+    "examples/*/.next",
+    "examples/*/dist",
+    "examples/*/build",
+    ".git",
+    ".github",
+    ".venv",
+    "*.pyc",
+    "__pycache__",
+]
+
+[project.urls]
+GitHub = "https://github.com/NVIDIA/voice-agent-examples"
+Documentation = "https://github.com/NVIDIA/voice-agent-examples/blob/main/README.md"
+
+# Force patched versions for known CVEs
+[tool.uv]
+override-dependencies = [
+    "pillow>=12.1.1",
+    "nltk>=3.9.3",
+    "setuptools>=80",
+    "grpcio>=1.71",
+    "protobuf==5.29.6",
+    "cryptography>=46.0.5"
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.2",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.24.0",
+    "pytest-mock>=3.14.0",
+    "pytest-cov>=6.0.0",
+    "types-pyyaml>=6.0.12.20241230",
+]
+
+[[tool.mypy.overrides]]
+module = ["pipecat.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# Set the default event loop scope of asynchronous fixtures (see https://pytest-asyncio.readthedocs.io/en/latest/reference/configuration.html)
+asyncio_default_fixture_loop_scope = "function"
+# The flag below should only be activated in special debug sessions
+# i.e. the test hangs and we need to see what happened up to that point.
+# There are some race conditions with how the logging streams are closed in the teardown
+# phase, which will cause tests to fail or "magically" ignored.
+log_cli = true
+filterwarnings = [
+    "ignore:'audioop' is deprecated:DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 120
+
+###############################################################################
+# Test Coverage configuration
+[tool.coverage.run]
+branch = true
+source = ["src/nvidia_pipecat"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+    ]
+
+ignore_errors = true
+
+###############################################################################
+# Linting Rules
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # docstring checks
+    "D"
+]
+
+ignore = ["SIM108"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
