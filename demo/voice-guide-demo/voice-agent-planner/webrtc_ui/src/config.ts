@@ -5,11 +5,11 @@ export const RTC_CONFIG: ConstructorParameters<typeof RTCPeerConnection>[0] = {
   iceServers: [
     {
       urls: [
-        "turn:<your_turn_host_or_ip>:3478?transport=udp",
-        "turn:<your_turn_host_or_ip>:3478?transport=tcp",
+        "turn:34.142.141.243:3478?transport=udp",
+        "turn:34.142.141.243:3478?transport=tcp",
       ],
-      username: "<your_turn_username>",
-      credential: "<your_turn_password>",
+      username: "turnuser",
+      credential: "VLaQxRtCxBR1ixHPBPQyGGTagA7fn0qp",
     },
   ],
 };

@@ -14,6 +14,7 @@ import { PromptInput } from "./PromptInput";
 import { VoiceSelector, type VoiceSelectorRef } from "./VoiceSelector";
 import type { VoicesMap } from "./types";
 import { Header } from "./components/ui/header";
+import { PlannerPanel } from "./PlannerPanel";
 
 function App() {
   // UI state
@@ -30,6 +31,8 @@ function App() {
   const [isZeroshotModel, setIsZeroshotModel] = useState<boolean>(false);
   const [customPromptName, setCustomPromptName] = useState<string>("");  // Backend prompt filename
   const [activeCustomPromptId, setActiveCustomPromptId] = useState<string>("");  // Active custom prompt ID (from backend's zero_shot_prompt)
+  const [plannerDisplayMarkdown, setPlannerDisplayMarkdown] = useState<string>("");
+  const [plannerStatus, setPlannerStatus] = useState<{ state: string; message: string } | null>(null);
   
   // Uploaded prompts management
   interface UploadedPrompt {
@@ -283,6 +286,16 @@ function App() {
             setHasSystemPrompt(parsed.length > 0);
           }
         }
+        else if (payload?.type === "planner_status") {
+          const state = typeof payload.state === "string" ? payload.state : "working";
+          const message = typeof payload.message === "string" ? payload.message : "Planning your answer...";
+          setPlannerStatus({ state, message });
+        }
+        else if (payload?.type === "planner_display") {
+          if (typeof payload.markdown === "string") {
+            setPlannerDisplayMarkdown(payload.markdown);
+          }
+        }
       } catch {}
     };
     ch.addEventListener("message", onMessage);
@@ -296,6 +309,8 @@ function App() {
       hasSyncedRef.current = false;
       syncInProgressRef.current = false;
       conversationStartedRef.current = false;
+      setPlannerStatus(null);
+      setPlannerDisplayMarkdown("");
     }
   }, [webRTC.status]);
 
@@ -642,6 +657,10 @@ function App() {
           />
         </div>
         <div className="p-5 border-l-1 border-gray-200 flex flex-col">
+          <PlannerPanel
+            status={plannerStatus}
+            markdown={plannerDisplayMarkdown}
+          />
           <div className="flex-1 mb-4">
             <AudioWaveForm
               streamOrTrack={webRTC.status === "connected" ? webRTC.stream : null}
@@ -737,6 +756,8 @@ function App() {
                 className="ml-3 bg-nvidia px-4 py-2 rounded-lg text-white"
                 onClick={() => {
                   setStarted(false);
+                  setPlannerStatus(null);
+                  setPlannerDisplayMarkdown("");
                   (webRTC as any).stop?.();
                 }}
               >
