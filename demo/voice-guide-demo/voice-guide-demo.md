@@ -74,7 +74,7 @@ Live implementation in this demo lives under:
 ## Step 1 — Install planner-side demo assets
 
 ```bash
-cd /home/ubuntu/nemoclaw-demo/demo/voice-guide-demo
+cd <your-checkout>/demo/voice-guide-demo
 ./install.sh [sandbox-name]
 ```
 
@@ -84,6 +84,14 @@ This installs:
 3. an AGENTS.md snippet that guides planner behavior inside the supported `main` agent path
 4. a higher planner timeout budget for slower OpenClaw/Nemotron starts
 5. a reset of `planner-*` session files under the `main` agent so stale planner state does not linger
+
+Before starting the voice stack, review the generated shared environment file:
+
+```bash
+${EDITOR:-nano} "${XDG_CONFIG_HOME:-$HOME/.config}/nemoclaw-voice-agent/voice-agent.env"
+```
+
+At minimum, set `NVIDIA_API_KEY`. If your setup needs TURN, hosted/local NIM overrides, or a custom upstream voice-agent path, update the matching `TURN_*`, `ASR_*`, `TTS_*`, `NVIDIA_LLM_*`, and `UPSTREAM_VOICE_AGENT_DIR` values there too.
 
 Important:
 - this installer does **not** currently apply a custom OpenShell network policy for planner live tools
@@ -104,7 +112,7 @@ openshell term
 Then in another terminal run the same host-to-sandbox planner path used by the app:
 
 ```bash
-cd /home/ubuntu/nemoclaw-demo/demo/voice-guide-demo
+cd <your-checkout>/demo/voice-guide-demo
 ./verify-planner.sh [sandbox-name]
 ```
 
@@ -117,23 +125,17 @@ If this preflight hangs or times out, check:
 
 ## Step 3 — Run the host voice stack
 
-Start the Jewel app entrypoint:
+Start the Jewel app entrypoint after the shared env file is configured:
 
 ```bash
-cd /home/ubuntu/nemoclaw-demo/demo/voice-guide-demo/voice-agent-planner
+cd <your-checkout>/demo/voice-guide-demo/voice-agent-planner
 uv run -m apps.jewel_voice_guide.pipeline
-```
-
-Optional host env:
-
-```bash
-export PLANNER_SANDBOX_NAME=clawpit
 ```
 
 Then start the UI from the matching working copy:
 
 ```bash
-cd /home/ubuntu/nemoclaw-demo/demo/voice-guide-demo/voice-agent-planner/webrtc_ui
+cd <your-checkout>/demo/voice-guide-demo/voice-agent-planner/webrtc_ui
 npm install
 npm run dev -- --host 0.0.0.0
 ```
@@ -230,6 +232,6 @@ voice-guide-demo/
 ## Notes
 
 - `voice-guide-demo/voice-agent-planner/apps/jewel_voice_guide` is the Jewel-specific app root.
-- `voice-guide-demo/voice-agent-planner/voice_agent_webrtc/.env` is intentionally excluded; use `env.example` to create your own local `.env`.
+- `voice-guide-demo/voice-agent.env.example` is the template for `${XDG_CONFIG_HOME:-$HOME/.config}/nemoclaw-voice-agent/voice-agent.env`.
 - the current installer deploys skill + data + AGENTS guidance, but not a custom planner egress policy
 - planner state is intended to be ephemeral per voice conversation and should be destroyed on voice disconnect/timeout, even though it currently runs on `main`

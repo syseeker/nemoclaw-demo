@@ -66,8 +66,16 @@ from nvidia_pipecat.services.riva_speech import NemotronASRService, NemotronTTSS
 from nvidia_pipecat.utils.riva_text_filter import RivaTextFilter  # noqa: E402
 
 VOICE_AGENT_WEBRTC_DIR = REPO_ROOT / "voice_agent_webrtc"
-load_dotenv(VOICE_AGENT_WEBRTC_DIR / ".env", override=True)
-load_dotenv(override=True)
+USER_CONFIG_DIR = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
+USER_ENV_FILE = USER_CONFIG_DIR / "nemoclaw-voice-agent" / "voice-agent.env"
+DEMO_ENV_FILE = REPO_ROOT.parent / "voice-agent.env"
+
+# Load the demo-level environment explicitly so the pipeline behaves the same
+# regardless of the directory or process manager used to start it.
+load_dotenv(USER_ENV_FILE, override=False)
+load_dotenv(DEMO_ENV_FILE, override=False)
+load_dotenv(VOICE_AGENT_WEBRTC_DIR / ".env", override=False)
+load_dotenv(override=False)
 
 def _resolve_config_path(raw_value: str | None, base_dir: Path, default_path: Path) -> Path:
     if not raw_value:

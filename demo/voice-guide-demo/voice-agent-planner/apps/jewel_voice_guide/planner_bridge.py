@@ -154,7 +154,12 @@ class PlannerBridge:
         openclaw_agent_prefix: str = "nemoclaw-start",
     ):
         """Initialize planner bridge settings from args and environment."""
-        self.sandbox_name = sandbox_name or os.getenv("PLANNER_SANDBOX_NAME") or _resolve_default_sandbox()
+        self.sandbox_name = (
+            sandbox_name
+            or os.getenv("PLANNER_SANDBOX_NAME")
+            or os.getenv("OPENCLAW_BRIDGE_SANDBOX")
+            or _resolve_default_sandbox()
+        )
         self.agent_name = os.getenv("PLANNER_AGENT_NAME", agent_name)
         self.timeout_sec = int(os.getenv("PLANNER_TIMEOUT_SEC", str(timeout_sec)))
         self.openclaw_agent_prefix = os.getenv("OPENCLAW_AGENT_PREFIX", openclaw_agent_prefix).strip()
@@ -335,7 +340,7 @@ class PlannerBridge:
         """Best-effort gateway bootstrapping for containerized sandboxes without systemd."""
         remote_cmd = (
             "set -e; "
-            "log_dir=\"$HOME/.openclaw\"; mkdir -p \"$log_dir\"; "
+            "log_dir=\"${TMPDIR:-/tmp}/openclaw-gateway-${USER:-user}\"; mkdir -p \"$log_dir\"; "
             "probe_log=\"$log_dir/gateway-probe.log\"; run_log=\"$log_dir/gateway-run.log\"; "
             "if openclaw gateway probe >\"$probe_log\" 2>&1; then "
             "  echo 'gateway-ready'; "

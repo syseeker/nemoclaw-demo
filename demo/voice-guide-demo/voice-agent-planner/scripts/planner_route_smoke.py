@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import re
 import time
 import uuid
@@ -25,8 +26,10 @@ from dotenv import load_dotenv
 from loguru import logger
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+USER_CONFIG_DIR = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
+load_dotenv(USER_CONFIG_DIR / "nemoclaw-voice-agent" / "voice-agent.env", override=False)
+load_dotenv(REPO_ROOT.parent / "voice-agent.env", override=False)
 load_dotenv(REPO_ROOT / "voice_agent_webrtc" / ".env", override=False)
-load_dotenv(REPO_ROOT / ".env", override=False)
 
 from apps.jewel_voice_guide.planner_backends import (
     DirectPlannerBackend,
