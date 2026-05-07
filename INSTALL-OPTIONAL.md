@@ -21,10 +21,10 @@ Policy presets make it easy to give your AI controlled access to external servic
     ```
 3. When prompted, pick a preset from the list. For example, to allow Telegram integration, select `telegram`.
 
-The `telegram` preset enables the Telegram bridge in NemoClaw, so your agent can access the Telegram API right away. For a full step-by-step Telegram setup, check out [demo/2.0-telegram-bridge.md](demo/2.0-telegram-bridge.md).
+The `telegram` preset enables the Telegram bridge in NemoClaw, so your agent can access the Telegram API right away. For a full step-by-step Telegram setup, check out [demo/telegram-bridge/telegram-bridge.md](demo/telegram-bridge/telegram-bridge.md).
 
 > **Tip:**  
-> You can also create your own policies, like a custom finance policy for getting stock prices, or limiting access to certain sites only. See [demo/1.0-basic.md](demo/1.0-basic.md) for a walkthrough on making your own, manually or with the help of an AI coding companion.
+> You can also create your own policies, like a custom finance policy for getting stock prices, or limiting access to certain sites only. See [demo/basic/basic.md](demo/basic/basic.md) for a walkthrough on making your own, manually or with the help of an AI coding companion.
 
 ---
 
@@ -63,7 +63,7 @@ openshell inference set --provider vllm --model <model-name>
 ```
 *(Works with any model vLLM supports!)*
 
-For a detailed, step-by-step guide (including how to set up a GPU VM on Brev and connect from NemoClaw), see [demo/3.0-remote-gpu.md](demo/3.0-remote-gpu.md).
+For a detailed, step-by-step guide (including how to set up an H200 GPU instance on Brev with self-hosted NIM hot-swapping), see [demo/remote-gpu/remote-gpu.md](demo/remote-gpu/remote-gpu.md).
 
 ---
 

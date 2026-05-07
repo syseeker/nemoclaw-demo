@@ -1,0 +1,162 @@
+name: voice-agents-webrtc
+
+services:
+  tts-service:
+    image: ${TTS_DOCKER_IMAGE:-nvcr.io/nim/nvidia/magpie-tts-multilingual:1.6.0}
+    user: "0:0"
+    environment:
+      - NGC_API_KEY=${NVIDIA_API_KEY}
+      - NIM_HTTP_API_PORT=9000
+      - NIM_GRPC_API_PORT=50051
+      - NIM_TAGS_SELECTOR=${TTS_NIM_TAGS:-name=magpie-tts-multilingual,batch_size=32}
+    ports:
+      - "50151:50051"
+    ulimits:
+      nofile: 2048
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:50051 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 10
+      start_period: 3000s # Longer startup for TensorRT engine compilation on first run
+    volumes:
+      - tts_cache:/opt/nim/.cache
+    shm_size: 16GB
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  asr-service:
+    image: ${ASR_DOCKER_IMAGE:-nvcr.io/nim/nvidia/parakeet-1-1b-ctc-en-us:1.4.0}
+    user: "0:0"
+    environment:
+      - NGC_API_KEY=${NVIDIA_API_KEY}
+      - NIM_HTTP_API_PORT=9001
+      - NIM_GRPC_API_PORT=50052
+      - NIM_TAGS_SELECTOR=${ASR_NIM_TAGS:-mode=str,vad=silero}
+    ports:
+      - "50152:50052"
+    volumes:
+      - asr_cache:/opt/nim/.cache
+    ulimits:
+      nofile: 2048
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:50052 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 2400s # Longer startup for TensorRT engine compilation on first run
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  nvidia-llm:
+    image: ${NVIDIA_LLM_IMAGE:-nvcr.io/nim/nvidia/nemotron-3-nano:1.7.0-variant}
+    user: "0:0"
+    env_file:
+      - .env
+    environment:
+      - NGC_API_KEY=${NVIDIA_API_KEY}
+      - NIM_HTTP_API_PORT=8000
+    ports:
+      - "18000:8000"
+    volumes:
+      - llm_cache:/opt/nim/.cache
+    shm_size: 16GB
+    ulimits:
+      nofile: 2048
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8000/v1/health/ready\").read()' || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 1800s # longer startup time needed for TRT engine build if prebuilt engine is not available.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  python-app:
+    build:
+      context: ../../
+      dockerfile: examples/voice_agent_webrtc/Dockerfile
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./audio_dumps:/app/examples/voice_agent_webrtc/audio_dumps
+      - ./prompt.yaml:/app/examples/voice_agent_webrtc/prompt.yaml:ro
+      - ./ipa.json:/app/examples/voice_agent_webrtc/ipa.json:ro
+    env_file:
+      - .env
+    environment:
+      # Docker services endpoints
+      - ASR_SERVER_URL=${ASR_SERVER_URL:-asr-service:50052}
+      - TTS_SERVER_URL=${TTS_SERVER_URL:-tts-service:50051}
+      - NVIDIA_LLM_URL=${NVIDIA_LLM_URL:-http://nvidia-llm:8000/v1}
+
+    depends_on:
+      tts-service:
+        condition: service_healthy
+      asr-service:
+        condition: service_healthy
+      nvidia-llm:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:7860/docs || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  ui-app:
+    build:
+      context: ../webrtc_ui
+      dockerfile: Dockerfile
+    ports:
+      - "9000:8000"
+    depends_on:
+      python-app:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  llm_cache:
+  asr_cache:
+  tts_cache:
