@@ -32,13 +32,13 @@ Do **not** use this skill for:
 
 AI-Q is reachable from inside the sandbox at:
 
-```
-http://172.18.0.1:8000
+```bash
+AIQ_HOST="<host-ip-from-demo-4-step-3>"
 ```
 
-This IP matches the host Docker gateway added in the **`aiq-local`** network
-policy (see [Demo 4.0](../../4.0-aiq-blueprint.md), Steps 3–4). If the policy
-uses a different IP, substitute it everywhere below.
+This value must match the host Docker gateway added in the **`aiq-local`**
+network policy (see [Demo 4.0](../../4.0-aiq-blueprint.md), Steps 3–4). If it
+is missing, ask the user to set it before calling AI-Q.
 
 Endpoints used:
 
@@ -52,12 +52,13 @@ Endpoints used:
 
 Use the `exec` tool with a **single** `curl` call per attempt. Prefer
 non-streaming for clean JSON; only use streaming if the user explicitly asks
-for live output or the query is expected to take a long time.
+for live output or the query is expected to take a long time. Before calling
+AI-Q, make sure `AIQ_HOST` is set in the sandbox shell.
 
 **Non-streaming (default):**
 
 ```bash
-curl -sS --max-time 180 -X POST http://172.18.0.1:8000/generate \
+curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
 ```
@@ -65,7 +66,7 @@ curl -sS --max-time 180 -X POST http://172.18.0.1:8000/generate \
 **Streaming:**
 
 ```bash
-curl -N --max-time 300 -X POST http://172.18.0.1:8000/generate/stream \
+curl -N --max-time 300 -X POST "http://${AIQ_HOST}:8000/generate/stream" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
 ```
@@ -80,7 +81,7 @@ and pipe it to `curl --data-binary @-`.
 Before the first real query, probe health:
 
 ```bash
-curl -sS --max-time 5 http://172.18.0.1:8000/health
+curl -sS --max-time 5 "http://${AIQ_HOST}:8000/health"
 ```
 
 If health fails or any `/generate*` call returns non-2xx / empty body:
