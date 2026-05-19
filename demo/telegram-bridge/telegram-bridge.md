@@ -1,20 +1,18 @@
-# Telegram Bridge — HEARTBEAT Health Monitor
+# Telegram Bridge — Setup & Use Cases
 
 Interact with the OpenClaw agent through Telegram instead of the terminal.
-This demo sets up the Telegram bridge and configures a HEARTBEAT that posts
-periodic sandbox health summaries to a Telegram chat.
 
 ## What you will learn
 
 - How to create a Telegram bot and connect it to the sandbox
-- Starting and stopping the Telegram bridge and cloudflared tunnel
-- Setting up a HEARTBEAT for periodic health checks
-- Attaching a Markdown file to heartbeat messages
-- Restricting bot access by Telegram chat ID
+- Sending messages to the agent via Telegram
+- Scheduling recurring agent tasks (heartbeat, cron jobs)
+- Switching the LLM model at runtime via Telegram
+- Restricting bot access by Telegram user ID
 
 > **Reference**: [Set Up the Telegram Bridge](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html)
 >
-> **See also**: [Telegram hourly nudge](../telegram-hourly-nudge/hourly-nudge.md) (CRON jobs) · [Remote GPU](../remote-gpu/remote-gpu.md) (model switching) · [Token budget](../token-budget/token-budget-guide.md) (token usage tracking)
+> **See also**: [Telegram Heartbeat](../telegram-heartbeat/heartbeat.md) · [Telegram hourly nudge](../telegram-hourly-nudge/hourly-nudge.md) · [Remote GPU](../remote-gpu/remote-gpu.md) · [Token budget](../token-budget/token-budget-guide.md)
 
 ---
 
@@ -30,93 +28,124 @@ periodic sandbox health summaries to a Telegram chat.
 Open Telegram and send `/newbot` to **@BotFather**. Follow the prompts to
 create a bot and receive a bot token.
 
-## Step 2: Start the Telegram Bridge
+## Step 2: Configure Telegram during onboarding
+
+Telegram is configured during `nemoclaw onboard`. Provide your bot token
+either as an environment variable before running the wizard, or when prompted:
 
 ```bash
 export TELEGRAM_BOT_TOKEN=<your-bot-token>
-nemoclaw start
+nemoclaw onboard
 ```
 
-The `start` command launches:
+During onboarding step **Messaging channels**, toggle Telegram on. The wizard
+stores the token securely in an OpenShell provider and bakes the channel
+config into the sandbox image. The agent inside the sandbox receives a
+placeholder — never the real token.
 
-- **Telegram bridge** — forwards messages between Telegram and the agent.
-- **cloudflared tunnel** — provides external access to the sandbox.
-
-Verify the services are running:
-
-```bash
-nemoclaw status
-```
+If you already completed onboarding with Telegram enabled, you're set.
 
 ## Step 3: Send a Message
 
-Open Telegram, find your bot, and send a message. The bridge forwards it to
-the OpenClaw agent inside the sandbox and returns the response.
+Open Telegram, find your bot, and send `/start`, then any message. OpenClaw
+inside the sandbox handles Telegram natively — no host-side bridge process
+is needed.
 
-### Restrict access by chat ID (optional)
+## Step 4: Start cloudflared (optional)
+
+`nemoclaw start` launches a **cloudflared tunnel** that gives your dashboard
+a public URL. It does **not** affect Telegram — Telegram works as long as
+the sandbox is running.
 
 ```bash
-export ALLOWED_CHAT_IDS="123456789,987654321"
 nemoclaw start
+nemoclaw status
 ```
 
 ---
 
 ## Use Case A: HEARTBEAT — Sandbox Health Monitor
-**Scenario**: Your bot posts **periodic health messages** to a Telegram chat you choose. Each tick summarizes sandbox readiness, inference (provider + model), gateway connectivity, and (optionally) hints about policy / egress denials in recent logs.
-**Important**: NemoClaw starts a small **host-side** process (`telegram-heartbeat.js`) alongside the Telegram bridge when you set **`TELEGRAM_HEARTBEAT_CHAT_ID`** and **`TELEGRAM_BOT_TOKEN`**. It calls `openshell` on the host to inspect the sandbox and sends `sendMessage` to Telegram directly.
-### How it is enabled
-| Variable | Required | Purpose |
-|----------|----------|---------|
-| `TELEGRAM_BOT_TOKEN` | Yes | Same token as the bridge; heartbeat will not start without it. |
-| `TELEGRAM_HEARTBEAT_CHAT_ID` | Yes | Numeric chat id where pings are sent (private DM or group). |
-| `HEARTBEAT_INTERVAL_SEC` | No | Seconds between pings (default **300**). |
-| `HEARTBEAT_POLICY_LOG` | No | Set to **`1`** to scan recent sandbox logs for denial-style markers (slower; can time out on huge logs). |
-| `HEARTBEAT_MARKDOWN_FILE` | No | Host path to a UTF-8 `.md` file; each tick also sends that file after the health message (see [below](#optional-markdown-file-heartbeatmd)). Alias: `TELEGRAM_HEARTBEAT_MARKDOWN_FILE`. |
-| `HEARTBEAT_MARKDOWN_AS_PLAIN_APPEND` | No | Set to **`1`** to append the file into the **same** message as the health block as plain text (4096 char limit). Omit for default: follow-up message(s) with Telegram Markdown. |
-`SANDBOX_NAME` is taken from your NemoClaw registry default when you run `nemoclaw start` (so it matches `nemoclaw status` / PID files under `/tmp/nemoclaw-services-<name>/`). If you customize the default sandbox name, heartbeat probes **that** name.
-### Step-by-step
-**1. Find your Telegram chat id (numeric)**
-- Message [@userinfobot](https://t.me/userinfobot) and note `Id`, or
-- Send any message to your bot, then inspect the bridge log on the host:
-  ```bash
-  grep -E '^\[[0-9]+\]' /tmp/nemoclaw-services-<sandbox>/telegram-bridge.log | tail -1
-  ```
-  A line like `[123412345] Name: …` means your chat id is `123412345`.
-**2. Export variables and start services**
-Shortest path (adjust interval if you want faster demo ticks):
-```bash
-export TELEGRAM_BOT_TOKEN='<your-bot-token>'
-export TELEGRAM_HEARTBEAT_CHAT_ID='<your-chat-id>'
-export HEARTBEAT_INTERVAL_SEC=120   # optional; omit for default 300s
-# export HEARTBEAT_POLICY_LOG=1     # optional: include log-based denial hints
-# export HEARTBEAT_MARKDOWN_FILE="$HOME/heartbeat.md"   # optional: see below
-# export HEARTBEAT_MARKDOWN_AS_PLAIN_APPEND=1           # optional: merge .md into health message as plain text
-nemoclaw start
-```
-Instead of `export`, you can put the same keys in `~/.nemoclaw/credentials.json`; `nemoclaw start` loads them for the service script.
-**3. Confirm heartbeat is running**
-```bash
-nemoclaw status
-```
-You should see a line indicating **Telegram pings enabled** (or equivalent “Heartbeat” wording in the services banner).
-Process check (avoid matching `tail -f` on log files):
-```bash
-pgrep -af 'telegram-heartbeat\.js'
-```
-Logs:
-```bash
-tail -f /tmp/nemoclaw-services-<sandbox>/telegram-heartbeat.log
-```
-Replace `<sandbox>` with your default sandbox name (often `nemoclaw`).
 
-### Optional Markdown file (`heartbeat.md`)
-Save any **`.md` on the host** where `nemoclaw start` runs (e.g. `$HOME/heartbeat.md`) and set **`HEARTBEAT_MARKDOWN_FILE`** to that path. Each tick you still get the **health check** message first; **then** the file is sent as **follow-up** Telegram Markdown (with plain-text retry if Telegram rejects the markup), unless **`HEARTBEAT_MARKDOWN_AS_PLAIN_APPEND=1`**, in which case health + `---` + file contents arrive in **one** message as plain text. 
+**Scenario**: Post periodic health summaries to a Telegram chat using an
+OpenClaw **skill** and a **cron job** on the host.
+
+See [**Telegram Heartbeat**](../telegram-heartbeat/heartbeat.md) for full
+step-by-step instructions covering skill installation, cron setup, and the
+end-to-end pipeline.
 
 ---
 
-## Stop the Services
+## Use Case B: CRON Job — Scheduled Agent Tasks
+
+**Scenario**: Schedule the agent to perform a task on a recurring basis and
+post results to Telegram. For example, fetch the NVIDIA stock price every
+morning at 9:00 AM.
+
+The pattern is the same as the heartbeat: create a **skill**, invoke it via
+`openclaw agent` through OpenShell, and pipe the output to Telegram. See
+[Telegram Heartbeat](../telegram-heartbeat/heartbeat.md) for the template, and
+[Telegram hourly nudge](../telegram-hourly-nudge/hourly-nudge.md) for another
+worked example using the `philosopher-nudge` skill.
+
+---
+
+## Use Case C: Switch LLM via Telegram
+
+**Scenario**: Send a Telegram message to switch the inference model at runtime
+without SSH-ing into the instance.
+
+**Example messages to the bot**:
+
+- *"Switch to Nemotron 3 Nano for faster responses"*
+- *"Switch back to Nemotron 3 Super for better reasoning"*
+
+The agent uses the `exec` tool to run the model switch:
+
+```bash
+openshell inference set --provider nvidia-nim --model nvidia/nemotron-3-nano-30b-a3b
+```
+
+**What to expect in Telegram**:
+
+- The bot confirms the model switch
+- Subsequent responses come from the new model
+
+**What to show**:
+
+- Send a complex reasoning prompt -> agent responds using Super (120B)
+- Switch to Nano via Telegram message
+- Send the same prompt -> faster response, possibly less detailed
+- Switch back to Super via Telegram message -> full reasoning restored
+
+---
+
+## Use Case D: Token Usage Tracker
+
+**Scenario**: Monitor token consumption in real time. The agent tracks
+cumulative token usage and posts an update to Telegram whenever the count
+changes — useful for cost awareness and quota management.
+
+<!-- TODO: implementation details — poll inference logs or gateway metrics
+     for token counts, post delta to Telegram when threshold is crossed -->
+
+**Example Telegram updates**:
+
+- *"Token usage: 12,450 total (+1,230 since last update) — model: Nemotron 3 Super"*
+- *"Token usage: 15,800 total (+3,350 since last update) — model: Nemotron 3 Nano"*
+
+**What to show**:
+
+- Send a few prompts via Telegram and watch the token counter update
+- Switch models (Use Case C) and compare token consumption per prompt
+- Set a token budget threshold and get an alert when approaching the limit
+
+---
+
+## Stop cloudflared
 
 ```bash
 nemoclaw stop
 ```
+
+This stops cloudflared (the public URL tunnel). It does **not** stop the
+sandbox or Telegram — those keep running independently.
