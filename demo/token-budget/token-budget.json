@@ -1,0 +1,4 @@
+{
+  "max_tokens": 50000,
+  "warn_at_percent": 80
+}

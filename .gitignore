@@ -1,0 +1,4 @@
+*obsolete/
+__pycache__/
+*.pyc
+.env

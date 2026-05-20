@@ -1,0 +1,7 @@
+voice-agent.env
+voice-agent-planner/voice-guide.env
+voice-agent-planner/.env
+voice-agent-planner/.env.*
+voice-agent-planner/.venv/
+voice-agent-planner/.ruff_cache/
+voice-agent-planner/webrtc_ui/node_modules/

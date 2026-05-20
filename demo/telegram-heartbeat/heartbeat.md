@@ -1,0 +1,186 @@
+# Telegram Heartbeat — Sandbox Health via OpenClaw Skill
+
+Send periodic health pings to a Telegram chat using an **OpenClaw skill** and
+a **cron job**. Each tick asks the LLM inside the sandbox to run health checks
+and post a summary like:
+
+> NemoClaw heartbeat OK
+> Time: 2026-04-06 11:00 +08
+> Model: nvidia-prod / nvidia/nemotron-3-super-120b-a12b
+> Health: All checks passed
+> Host: brev-mgr7gs72
+
+## What you will learn
+
+- Creating an OpenClaw **skill** (`sandbox-heartbeat`) and installing it in the sandbox
+- Invoking the agent from the host with `openclaw agent` through OpenShell
+- Sending the result to Telegram with a reusable Python sender
+- Scheduling the pipeline with **cron**
+
+**Reference:** [Set Up Telegram](https://docs.nvidia.com/nemoclaw/latest/deployment/set-up-telegram-bridge.html) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
+
+---
+
+## Prerequisites
+
+- A running NemoClaw sandbox (complete [INSTALL.md](../../INSTALL.md) Steps 1–2).
+- Telegram configured during `nemoclaw onboard` (bot token + user ID).
+- Python 3 on the host.
+
+---
+
+## Step 1 — Install the `sandbox-heartbeat` skill
+
+The skill file is at [`demo/telegram-heartbeat/skills/sandbox-heartbeat/SKILL.md`](skills/sandbox-heartbeat/SKILL.md).
+
+Upload it into the sandbox from the host:
+
+```bash
+SANDBOX_NAME="nemoclaw"
+
+openshell sandbox upload "$SANDBOX_NAME" \
+  demo/telegram-heartbeat/skills/sandbox-heartbeat/SKILL.md \
+  /sandbox/.openclaw/skills/sandbox-heartbeat/
+```
+
+The sandbox user's home directory is `/sandbox`, so `~/.openclaw/skills/`
+resolves to `/sandbox/.openclaw/skills/` — one upload covers both paths.
+
+Verify inside the sandbox:
+
+```bash
+nemoclaw "$SANDBOX_NAME" connect
+openclaw skills list
+```
+
+You should see `sandbox-heartbeat` in the list.
+
+---
+
+## Step 2 — Set up config and scripts
+
+**2a — Environment file** (secrets + settings):
+
+```bash
+mkdir -p ~/.config
+cp demo/telegram-heartbeat/templates/nemoclaw-telegram-heartbeat.env.example \
+   ~/.config/nemoclaw-telegram-heartbeat.env
+chmod 600 ~/.config/nemoclaw-telegram-heartbeat.env
+```
+
+Edit it with your real values:
+
+```bash
+nano ~/.config/nemoclaw-telegram-heartbeat.env
+```
+
+You need: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `SANDBOX_NAME`. Inference
+credentials are managed by the OpenShell gateway -- no API key needed here.
+
+**2b — Cron wrapper script:**
+
+```bash
+mkdir -p ~/bin
+cp demo/telegram-heartbeat/templates/run-telegram-heartbeat.sh ~/bin/run-telegram-heartbeat.sh
+chmod +x ~/bin/run-telegram-heartbeat.sh
+```
+
+**2c — Make pipeline scripts executable:**
+
+```bash
+chmod +x demo/telegram-heartbeat/scripts/run_sandbox_heartbeat.sh
+chmod +x demo/telegram-heartbeat/scripts/send_telegram_message.py
+```
+
+---
+
+## Step 3 — Test once
+
+```bash
+~/bin/run-telegram-heartbeat.sh
+```
+
+You should see:
+
+```
+run_sandbox_heartbeat: sandbox=nemoclaw session=heartbeat-...
+run_sandbox_heartbeat: extracted heartbeat (... chars)
+send_telegram_message: OK
+```
+
+And a health message in your Telegram chat.
+
+---
+
+## Step 4 — Schedule with cron
+
+```bash
+crontab -e
+```
+
+Add (adjust path and schedule as needed):
+
+```cron
+CRON_TZ=Asia/Singapore
+*/5 6-23 * * * /home/ubuntu/bin/run-telegram-heartbeat.sh >> /home/ubuntu/.local/log/telegram-heartbeat.log 2>&1
+```
+
+Create the log directory:
+
+```bash
+mkdir -p ~/.local/log
+```
+
+This sends a heartbeat every 5 minutes from 06:00 to 23:00. Use `*/1` for a
+quick demo (every minute), or `0 * * * *` for hourly in production.
+
+Check logs anytime:
+
+```bash
+tail -20 ~/.local/log/telegram-heartbeat.log
+```
+
+---
+
+## How it works
+
+```
+┌──────────┐  on schedule  ┌────────────────────────────────────────┐
+│  Cron    │──────────────▸│  ~/bin/run-telegram-heartbeat.sh      │
+└──────────┘               │                                        │
+                           │  1. source .env (secrets, sandbox)     │
+                           │  2. run_sandbox_heartbeat.sh ───┐      │
+                           │  3. send_telegram_message.py ◂──┘ pipe │
+                           └──────────┬───────────────┬─────────────┘
+                                      │ SSH via       │ HTTPS POST
+                                      │ openshell     │
+                                      ▼               ▼
+                           ┌────────────────┐  ┌───────────────┐
+                           │ OpenShell      │  │ Telegram API  │
+                           │ Sandbox        │  │ (sendMessage) │
+                           │                │  └───────┬───────┘
+                           │ openclaw agent │          │
+                           │ + sandbox-     │          ▼
+                           │   heartbeat    │  ┌───────────────┐
+                           │   skill        │  │ Telegram Chat │
+                           │ (LLM)         │  │ "heartbeat OK"│
+                           └────────────────┘  └───────────────┘
+```
+
+1. **Cron** fires the wrapper on the host.
+2. The wrapper SSHs into the sandbox through **OpenShell** and runs
+   `openclaw agent` with the **sandbox-heartbeat** skill.
+3. The LLM runs `openclaw doctor` and other checks, produces a health summary.
+4. The wrapper pipes the summary to **`send_telegram_message.py`**, which
+   POSTs it to the **Telegram API**.
+
+Telegram messaging for replies is handled natively by OpenClaw inside the
+sandbox (configured during `nemoclaw onboard`). No host-side bridge process
+is needed.
+
+---
+
+## See also
+
+- [Telegram Bridge](../telegram-bridge/telegram-bridge.md)
+- [Telegram hourly nudge](../telegram-hourly-nudge/hourly-nudge.md)

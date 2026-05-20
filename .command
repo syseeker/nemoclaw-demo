@@ -1,0 +1,1 @@
+rsync -av -e "ssh -F /home/boonpingl/.brev/ssh_config" /home/boonpingl/github/nemoclaw-demo/ nemoclaw-demo:/home/ubuntu/NemoClaw-Demo/  

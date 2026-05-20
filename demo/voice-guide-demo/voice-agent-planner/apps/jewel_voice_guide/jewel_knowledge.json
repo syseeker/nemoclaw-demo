@@ -1,0 +1,76 @@
+{
+  "items": [
+    {
+      "id": "rain_vortex",
+      "name": "HSBC Rain Vortex",
+      "category": "attraction",
+      "location_hint": "center of Jewel near the Rain Vortex core",
+      "reason": "the signature Jewel landmark and an easy orientation point",
+      "fit_score": 0.93,
+      "tags": ["landmark", "family_friendly", "jewel_local"]
+    },
+    {
+      "id": "forest_valley",
+      "name": "Shiseido Forest Valley",
+      "category": "family_activity",
+      "location_hint": "around the Rain Vortex and indoor garden paths",
+      "reason": "relaxed walking space that works well for families and short visits",
+      "fit_score": 0.9,
+      "tags": ["family_friendly", "nature", "jewel_local"]
+    },
+    {
+      "id": "canopy_park",
+      "name": "Canopy Park",
+      "category": "family_activity",
+      "location_hint": "upper levels of Jewel for family play and views",
+      "reason": "good if you want a child-friendly activity beyond just dining",
+      "fit_score": 0.88,
+      "tags": ["family_friendly", "kids", "activity", "jewel_local"]
+    },
+    {
+      "id": "birds_of_paradise",
+      "name": "Birds of Paradise",
+      "category": "dessert",
+      "location_hint": "inside Jewel, convenient for the Rain Vortex side of the mall",
+      "reason": "popular dessert stop that is easy to pair with sightseeing",
+      "fit_score": 0.86,
+      "tags": ["dessert", "family_friendly", "jewel_local"]
+    },
+    {
+      "id": "laderach",
+      "name": "Laderach",
+      "category": "dessert",
+      "location_hint": "near the Rain Vortex circulation zone inside Jewel",
+      "reason": "easy grab-and-go chocolate dessert stop near the central area",
+      "fit_score": 0.82,
+      "tags": ["dessert", "sweet_treat", "jewel_local"]
+    },
+    {
+      "id": "kiddy_palace",
+      "name": "Kiddy Palace",
+      "category": "toy_store",
+      "location_hint": "inside Jewel and practical for a kid-focused shopping stop",
+      "reason": "reliable family-friendly toy option after a dessert break",
+      "fit_score": 0.84,
+      "tags": ["kids", "shopping", "family_friendly", "jewel_local"]
+    },
+    {
+      "id": "burger_lobster",
+      "name": "Burger and Lobster",
+      "category": "dining",
+      "location_hint": "inside Jewel for a sit-down meal after exploring",
+      "reason": "useful when the request shifts from snack stops to a fuller meal",
+      "fit_score": 0.73,
+      "tags": ["meal", "jewel_local"]
+    },
+    {
+      "id": "jumbo_seafood",
+      "name": "Jumbo Seafood",
+      "category": "dining",
+      "location_hint": "inside Jewel if you want a more substantial supper stop",
+      "reason": "good fallback when the family wants a proper dinner instead of dessert only",
+      "fit_score": 0.72,
+      "tags": ["meal", "family_friendly", "jewel_local"]
+    }
+  ]
+}
