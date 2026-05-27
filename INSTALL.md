@@ -85,8 +85,6 @@ brev login
 brev open <instance-name> cursor
 ```
 
-Cursor will connect to the remote instance via SSH. From there, continue to [Step 2](#step-2-install-nemoclaw).
-
 If you using VSCode as your IDE, you can use the following shell script to connect the Brev instance to VSCode.
 
 **Open** your Brev instance in VSCode:
@@ -94,6 +92,8 @@ If you using VSCode as your IDE, you can use the following shell script to conne
 ```bash
 brev open <instance-name> code
 ```
+
+Cursor/ VSCode will connect to the remote instance via SSH. From there, continue to [Step 2](#step-2-install-nemoclaw).
 
 ---
 
