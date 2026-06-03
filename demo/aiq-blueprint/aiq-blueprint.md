@@ -225,22 +225,24 @@ the sandbox, not on the host:
 
 ```bash
 nemoclaw "${NEMOCLAW_SANDBOX}" connect
-
-AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
-echo "AIQ_HOST=$AIQ_HOST"   # inside the sandbox → 172.18.0.1 (a 172.x address)
 ```
+
+From inside the sandbox, AI-Q on the host is reachable as
+**`host.docker.internal`** (port 8000). Use that literal host — do **not** use
+`127.0.0.1`/`localhost`, which point at the sandbox itself and are rejected by
+the network policy.
 
 Test the health endpoint:
 
 ```bash
-curl "http://${AIQ_HOST}:8000/health"
+curl "http://host.docker.internal:8000/health"
 # {"status":"healthy"}
 ```
 
 Send a research query (streaming):
 
 ```bash
-curl -N -X POST "http://${AIQ_HOST}:8000/generate/stream" \
+curl -N -X POST "http://host.docker.internal:8000/generate/stream" \
   -H "Content-Type: application/json" \
   -d '{"query": "What is CUDA and how does it relate to GPU programming?"}'
 ```
@@ -248,7 +250,7 @@ curl -N -X POST "http://${AIQ_HOST}:8000/generate/stream" \
 Send a research query (non-streaming):
 
 ```bash
-curl -s -X POST "http://${AIQ_HOST}:8000/generate" \
+curl -s -X POST "http://host.docker.internal:8000/generate" \
   -H "Content-Type: application/json" \
   -d '{"query": "What is CUDA?"}' | python3 -m json.tool
 ```

@@ -2,19 +2,19 @@
 name: aiq-research
 description: >-
   Use for "research", "deep dive", "investigate", or "find citations" requests,
-  the /research and /deep-research commands, or "use skill aiq-research". Delegates to
-  the AI-Q Blueprint backend on the host (intent classification, Tavily web
-  search, citation synthesis) and returns an answer with sources. HOW TO CALL
-  IT — do exactly this, do not improvise: the sandbox reaches AI-Q on its
-  default gateway, port 8000. Resolve the host and POST the query in one exec,
-  e.g. AIQ_HOST="${AIQ_HOST:-$(ip route|awk '/^default/{print $3}')}"; curl -sS
-  --max-time 180 -X POST "http://$AIQ_HOST:8000/generate" -H 'Content-Type:
-  application/json' -d '{"query":"<USER QUERY>"}'. AI-Q itself does the web
-  search, so the sandbox needs NO public internet — do NOT curl the public
-  internet, do NOT claim the network is blocked, and do NOT ask the operator to
-  change policy; just run that curl. Treat it as failed only if THAT curl
-  fails. Read this skill's SKILL.md (same dir) for streaming and the
-  Answer+Sources output contract.
+  the /research and /deep-research commands, or "use skill aiq-research".
+  Delegates to the AI-Q Blueprint backend on the host (intent classification,
+  Tavily web search, citation synthesis) and returns an answer with sources.
+  HOW TO CALL IT — run exactly this curl, do not improvise and do not write
+  code to resolve a host: curl -sS --max-time 180 -X POST
+  "http://host.docker.internal:8000/generate" -H 'Content-Type:
+  application/json' -d '{"query":"<USER QUERY>"}'. The host is ALWAYS
+  host.docker.internal — NEVER 127.0.0.1 or localhost (AI-Q is on the host, not
+  in the sandbox). AI-Q itself does the web search, so the sandbox needs NO
+  public internet: do NOT curl the public internet, do NOT claim the network is
+  blocked, and do NOT ask the operator to change policy; just run that curl.
+  Treat it as failed only if THAT curl fails. Read this skill's SKILL.md (same
+  dir) for streaming and the Answer+Sources output contract.
 user-invocable: true
 ---
 
@@ -62,21 +62,20 @@ Do **not** use this skill for:
 
 ## Endpoint
 
-AI-Q runs on the host on port 8000. The sandbox reaches it via its **default
-gateway** — do not rely on an inherited `AIQ_HOST` env var (the agent's `exec`
-runs in the gateway process, which does not see your interactive shell's
-exports). Resolve the host yourself at the start of **every** `exec` call (each
-`exec` is a fresh shell, so the variable does not persist between calls):
+AI-Q runs **on the host** on port 8000, reachable from the sandbox as
+**`host.docker.internal`**. Always use that literal host:
 
-```bash
-AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
+```
+http://host.docker.internal:8000
 ```
 
-This resolves to the host Docker gateway (e.g. `172.18.0.1`) — the same host
-allowed in the **`aiq-local`** network policy (see
-[the AI-Q Blueprint demo](../../aiq-blueprint.md), Steps 3–4).
-`host.docker.internal` also resolves to it if you prefer a name. If a call is
-blocked, confirm the policy is applied.
+**Do not** try to resolve, compute, or guess the host, and **never** use
+`127.0.0.1` or `localhost` — AI-Q is on the host, not inside the sandbox, so
+localhost will be rejected by the network policy. `host.docker.internal`
+resolves to the host Docker gateway, which is the host allowed in the
+**`aiq-local`** policy (see [the AI-Q Blueprint demo](../../aiq-blueprint.md),
+Steps 3–4). If a call is blocked, confirm that policy is applied — do not
+switch to localhost.
 
 Endpoints used:
 
@@ -93,16 +92,15 @@ handling**); **(2)** if healthy, immediately run the `/generate` curl below.
 These two `exec` calls are the *only* network actions this skill takes — no
 public-internet probes, no fallbacks.
 
-Use the `exec` tool with a **single** `curl` call per attempt. Prefer
-non-streaming for clean JSON; only use streaming if the user explicitly asks
-for live output or the query is expected to take a long time. Resolve
-`AIQ_HOST` inline in the same command (see **Endpoint**).
+Use the `exec` tool with a **single** `curl` call per attempt — a plain shell
+`curl`, not JavaScript or a code bridge. Prefer non-streaming for clean JSON;
+only use streaming if the user explicitly asks for live output or the query is
+expected to take a long time. Use the literal host `host.docker.internal`.
 
 **Non-streaming (default):**
 
 ```bash
-AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
-curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
+curl -sS --max-time 180 -X POST "http://host.docker.internal:8000/generate" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
 ```
@@ -110,8 +108,7 @@ curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
 **Streaming:**
 
 ```bash
-AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
-curl -N --max-time 300 -X POST "http://${AIQ_HOST}:8000/generate/stream" \
+curl -N --max-time 300 -X POST "http://host.docker.internal:8000/generate/stream" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
 ```
@@ -126,8 +123,7 @@ and pipe it to `curl --data-binary @-`.
 Before the first real query, probe health:
 
 ```bash
-AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
-curl -sS --max-time 5 "http://${AIQ_HOST}:8000/health"
+curl -sS --max-time 5 "http://host.docker.internal:8000/health"
 ```
 
 Only treat this as a failure if **this exact `curl` to AI-Q** fails (non-2xx,
