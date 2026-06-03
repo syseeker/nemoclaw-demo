@@ -13,6 +13,24 @@ multi-agent pipeline running on the host. AI-Q handles intent classification,
 shallow/deep research, web search (Tavily), and citation synthesis. You return
 a tight summary plus every source AI-Q cites.
 
+## Critical — how this skill reaches the network
+
+**Do NOT probe the public internet** (e.g. `curl google.com`, `ping`, DNS
+checks) and **do NOT infer from a blocked public request that this skill is
+unavailable.** This sandbox has no direct public internet *by design* — that is
+expected and irrelevant to this skill.
+
+This skill talks **only** to AI-Q on the host (the sandbox's default gateway,
+port 8000), which the `aiq-local` network policy explicitly allows. **AI-Q
+itself performs the web search** (Tavily) from the host. So:
+
+- Your **first action MUST be the `/health` curl** in **Error handling** below.
+- If `/health` returns `{"status":"healthy"}`, **proceed to `/generate`** — do
+  not stop, do not ask the operator to "adjust the network policy", do not fall
+  back to local docs or your own knowledge.
+- Report a network problem **only if that specific `curl` to AI-Q fails** — and
+  quote the actual curl error. Never claim it's blocked without having run it.
+
 ## Use when
 
 - The user asks to **research**, **do a deep dive**, **investigate**, **look
@@ -56,6 +74,11 @@ Endpoints used:
 
 ## How to run a query
 
+Required order, every time: **(1)** run the `/health` curl (see **Error
+handling**); **(2)** if healthy, immediately run the `/generate` curl below.
+These two `exec` calls are the *only* network actions this skill takes — no
+public-internet probes, no fallbacks.
+
 Use the `exec` tool with a **single** `curl` call per attempt. Prefer
 non-streaming for clean JSON; only use streaming if the user explicitly asks
 for live output or the query is expected to take a long time. Resolve
@@ -93,10 +116,15 @@ AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
 curl -sS --max-time 5 "http://${AIQ_HOST}:8000/health"
 ```
 
-If health fails or any `/generate*` call returns non-2xx / empty body:
+Only treat this as a failure if **this exact `curl` to AI-Q** fails (non-2xx,
+empty body, or a connection/proxy error). A blocked *public-internet* request
+is **not** a failure of this skill — ignore it entirely.
 
-1. State plainly that AI-Q is unreachable — do **not** silently fall back to
-   guesses or the built-in search.
+If, and only if, the AI-Q `curl` itself fails:
+
+1. Quote the actual `curl` error/output, then state plainly that AI-Q is
+   unreachable — do **not** silently fall back to guesses or the built-in
+   search.
 2. Suggest the user verify `docker ps | grep aiq-agent` on the host and that
    the `aiq-local` network policy is applied.
 3. Stop. Do not retry more than twice.
