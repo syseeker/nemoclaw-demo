@@ -1,6 +1,20 @@
 ---
 name: aiq-research
-description: Run a multi-agent deep-research query against the AI-Q Blueprint backend (intent classification, shallow/deep research, web search, citations) and return a concise answer with sources. Use for any "research", "deep dive", "investigate", or "find citations" request.
+description: >-
+  Use for "research", "deep dive", "investigate", or "find citations" requests,
+  the /research and /deep-research commands, or "use skill aiq-research". Delegates to
+  the AI-Q Blueprint backend on the host (intent classification, Tavily web
+  search, citation synthesis) and returns an answer with sources. HOW TO CALL
+  IT — do exactly this, do not improvise: the sandbox reaches AI-Q on its
+  default gateway, port 8000. Resolve the host and POST the query in one exec,
+  e.g. AIQ_HOST="${AIQ_HOST:-$(ip route|awk '/^default/{print $3}')}"; curl -sS
+  --max-time 180 -X POST "http://$AIQ_HOST:8000/generate" -H 'Content-Type:
+  application/json' -d '{"query":"<USER QUERY>"}'. AI-Q itself does the web
+  search, so the sandbox needs NO public internet — do NOT curl the public
+  internet, do NOT claim the network is blocked, and do NOT ask the operator to
+  change policy; just run that curl. Treat it as failed only if THAT curl
+  fails. Read this skill's SKILL.md (same dir) for streaming and the
+  Answer+Sources output contract.
 user-invocable: true
 ---
 
