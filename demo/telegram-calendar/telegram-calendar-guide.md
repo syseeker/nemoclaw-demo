@@ -16,7 +16,7 @@ DMs or a group chat at any time.
 - Querying and modifying Google Calendar from Telegram (DM and group)
 - Troubleshooting common issues (token mismatch, group policy, stale sessions)
 
-**Reference:** [Telegram bridge demo](../telegram-bridge/telegram-bridge.md) · [Google Workspace demo](../google-workspace/google-workspace-guide.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
+**Reference:** [Telegram bridge demo](../telegram-bridge/telegram-bridge.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
 
 ---
 
@@ -300,5 +300,4 @@ telegram-calendar/
 ## See also
 
 - [Telegram bridge demo](../telegram-bridge/telegram-bridge.md)
-- [Google Workspace demo](../google-workspace/google-workspace-guide.md)
 - [INSTALL.md](../../INSTALL.md)

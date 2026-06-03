@@ -7,7 +7,6 @@
 | [Telegram Heartbeat](telegram-heartbeat/heartbeat.md) | Sandbox health pings via OpenClaw skill + cron |
 | [Telegram hourly nudge](telegram-hourly-nudge/hourly-nudge.md) | NemoClaw + Telegram: **philosopher-nudge** skill, LLM nudge via cron, reply via bridge |
 | [Remote GPU](remote-gpu/remote-gpu.md) | Self-hosted NIM hot-swapping on Brev H200 — activate models from Telegram or TUI |
-| [Google Workspace](google-workspace/google-workspace-guide.md) | Google Calendar, Gmail, Drive, Sheets, Contacts, Tasks via `gog` CLI |
 | [Telegram + Calendar](telegram-calendar/telegram-calendar-guide.md) | CRUD Google Calendar events from Telegram |
 | [Token Budget](token-budget/token-budget-guide.md) | Session token usage cap — monitor and limit agent token consumption |
 | [Voice Guide](voice-guide-demo/voice-guide-demo.md) | Jewel Singapore voice guide with explicit direct, lookup, and planner paths |
