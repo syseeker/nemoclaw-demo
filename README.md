@@ -19,7 +19,6 @@ nemoclaw-demo provides:
 | ------------------------ | --------------------------------------------------------------------------------------------- |
 | [INSTALL.md](INSTALL.md) | Step-by-step guide for prerequisites, environment setup, and installation instructions        |
 | [demo/](demo/)           | Worked demo scenarios: basics, Telegram integration, remote GPU usage, voice guide setup, AI-Q scenario details  |
-| [demo-nvidia-official/](demo-nvidia-official/) | Community demos from [brevdev/nemoclaw-demos](https://github.com/brevdev/nemoclaw-demos): VLM, speech, Blender, Google Workspace |
 | [FAQ.md](FAQ.md)         | Frequently asked questions: how `inference.local` works, network flows, `web_fetch` vs `exec` |
 | [TODO.md](TODO.md)       | Issue tracker and roadmap for current and upcoming tasks                                      |
 
