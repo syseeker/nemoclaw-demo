@@ -32,8 +32,8 @@ classification, shallow/deep research, web search, citations) via REST API.
 Set these once in the host shell you use for this demo:
 
 ```bash
-export NEMOCLAW_SANDBOX=....
-export NEMOCLAW_DEMO_ROOT=...
+export NEMOCLAW_SANDBOX="<sandbox_name>"
+export NEMOCLAW_DEMO_ROOT="<directory path to nemoclaw-demo>"
 ```
 
 Run the `NEMOCLAW_DEMO_ROOT` line from anywhere inside this demo repo. If you
@@ -132,10 +132,13 @@ curl http://localhost:8000/health
 The sandbox reaches the host via the Docker network gateway. Find it:
 
 ```bash
+CONTAINER="$(docker ps --filter "name=openshell-${NEMOCLAW_SANDBOX}-" --format '{{.Names}}' | head -n1)"
+
 export AIQ_HOST="$(
-  docker inspect "openshell-cluster-${NEMOCLAW_SANDBOX}" \
+  docker inspect "${CONTAINER}" \
     --format '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}'
 )"
+
 printf 'AI-Q endpoint: http://%s:8000\n' "${AIQ_HOST}"
 ```
 
@@ -151,7 +154,7 @@ network policy and when calling AI-Q from inside the sandbox.
 Copy the template into the NemoClaw policy presets directory:
 
 ```bash
-cat > ~/.nemoclaw/source/nemoclaw-blueprint/policies/presets/aiq-local.yaml << EOF
+cat > /home/ubuntu/NemoClaw/nemoclaw-blueprint/policies/presets/aiq-local.yaml << EOF
 preset:
   name: aiq-local
   description: "AI-Q Blueprint API on local host (port 8000)"
@@ -190,26 +193,17 @@ Without a skill, the agent doesn't know AI-Q exists — you'd have to spell out
 agent to route any "research / deep dive / investigate" request through AI-Q
 and return a clean **Answer + Sources** block.
 
-OpenClaw should see the skill under **both** of these paths inside the
-sandbox (create dirs if needed):
-
-- `/sandbox/.openclaw/skills/aiq-research/SKILL.md`
-- `$HOME/.openclaw/skills/aiq-research/SKILL.md` (usually `/home/sandbox/...`)
-
 **Fast path — upload from the host:**
 
 ```bash
 openshell sandbox upload "${NEMOCLAW_SANDBOX}" \
   "${NEMOCLAW_DEMO_ROOT}/demo/aiq-blueprint/skills/aiq-research/SKILL.md" \
   /sandbox/.openclaw/skills/aiq-research/
-
-openshell sandbox upload "${NEMOCLAW_SANDBOX}" \
-  "${NEMOCLAW_DEMO_ROOT}/demo/aiq-blueprint/skills/aiq-research/SKILL.md" \
-  /home/sandbox/.openclaw/skills/aiq-research/
 ```
 
-> The skill uses `AIQ_HOST` in its `curl` examples. Keep the same value
-> exported in the sandbox shell when you launch OpenClaw.
+> The skill resolves the AI-Q host itself from the sandbox's default gateway on
+> every call, so you do **not** need to export `AIQ_HOST` for the agent (see
+> Step 7).
 
 **Verify** the skill is registered:
 
@@ -226,16 +220,14 @@ script), see [Install the philosopher-nudge skill](../telegram-hourly-nudge/hour
 
 ## Step 6 — Test from inside the sandbox
 
-Connect to the sandbox:
+Connect to the sandbox **first** — every command in this step runs *inside*
+the sandbox, not on the host:
 
 ```bash
 nemoclaw "${NEMOCLAW_SANDBOX}" connect
-```
 
-Inside the sandbox shell, set the same endpoint values from the host:
-
-```bash
-export AIQ_HOST="<host-ip-from-step-3>"
+AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
+echo "AIQ_HOST=$AIQ_HOST"   # inside the sandbox → 172.18.0.1 (a 172.x address)
 ```
 
 Test the health endpoint:
@@ -275,7 +267,6 @@ Open a TUI session in the sandbox:
 
 ```bash
 nemoclaw "${NEMOCLAW_SANDBOX}" connect
-export AIQ_HOST="<host-ip-from-step-3>"
 openclaw tui
 ```
 
@@ -286,27 +277,22 @@ Then try any of these prompts:
 - `Investigate recent developments in retrieval-augmented generation.`
 
 The agent should recognize the intent, invoke **`aiq-research`**, hit
-`http://${AIQ_HOST}:8000/generate`, and reply with an `### Answer` +
-`### Sources` block per the skill's output contract.
-
-If the agent answers from its own weights instead of calling AI-Q, that's
-usually one of:
-
-1. The skill file isn't under both paths from Step 5 — re-check with
-   `openclaw skills list`.
-2. The network policy isn't applied — re-run
-   `nemoclaw "${NEMOCLAW_SANDBOX}" policy-add` and pick `aiq-local`.
-3. AI-Q is down — curl `/health` from inside the sandbox (Step 6).
+AI-Q's `/generate` endpoint, and reply with an `### Answer` + `### Sources`
+block per the skill's output contract.
 
 ---
 
 ## Step 8 (optional) — Access the web UI
 
-The AI-Q web UI runs on port 3000. From your local machine, forward the port:
+The AI-Q web UI runs on port 3000. Run this **from your local machine
+(laptop/desktop), not on the VM**, replacing `user@your-vm` with your actual
+SSH login and host:
 
 ```bash
-ssh -L 3000:localhost:3000 -L 8000:localhost:8000 user@your-vm
+ssh -L 3000:localhost:3000 -L 8000:localhost:8000 <user>@<vm-host>
 ```
+
+For example: `ssh -L 3000:localhost:3000 -L 8000:localhost:8000 ubuntu@203.0.113.10`
 
 Then open [http://localhost:3000](http://localhost:3000) in your browser.
 

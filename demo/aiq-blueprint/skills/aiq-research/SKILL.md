@@ -30,15 +30,21 @@ Do **not** use this skill for:
 
 ## Endpoint
 
-AI-Q is reachable from inside the sandbox at:
+AI-Q runs on the host on port 8000. The sandbox reaches it via its **default
+gateway** — do not rely on an inherited `AIQ_HOST` env var (the agent's `exec`
+runs in the gateway process, which does not see your interactive shell's
+exports). Resolve the host yourself at the start of **every** `exec` call (each
+`exec` is a fresh shell, so the variable does not persist between calls):
 
 ```bash
-AIQ_HOST="<host-ip-from-demo-4-step-3>"
+AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
 ```
 
-This value must match the host Docker gateway added in the **`aiq-local`**
-network policy (see [the AI-Q Blueprint demo](../../aiq-blueprint.md), Steps 3–4). If it
-is missing, ask the user to set it before calling AI-Q.
+This resolves to the host Docker gateway (e.g. `172.18.0.1`) — the same host
+allowed in the **`aiq-local`** network policy (see
+[the AI-Q Blueprint demo](../../aiq-blueprint.md), Steps 3–4).
+`host.docker.internal` also resolves to it if you prefer a name. If a call is
+blocked, confirm the policy is applied.
 
 Endpoints used:
 
@@ -52,12 +58,13 @@ Endpoints used:
 
 Use the `exec` tool with a **single** `curl` call per attempt. Prefer
 non-streaming for clean JSON; only use streaming if the user explicitly asks
-for live output or the query is expected to take a long time. Before calling
-AI-Q, make sure `AIQ_HOST` is set in the sandbox shell.
+for live output or the query is expected to take a long time. Resolve
+`AIQ_HOST` inline in the same command (see **Endpoint**).
 
 **Non-streaming (default):**
 
 ```bash
+AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
 curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
@@ -66,6 +73,7 @@ curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
 **Streaming:**
 
 ```bash
+AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
 curl -N --max-time 300 -X POST "http://${AIQ_HOST}:8000/generate/stream" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
@@ -81,6 +89,7 @@ and pipe it to `curl --data-binary @-`.
 Before the first real query, probe health:
 
 ```bash
+AIQ_HOST="${AIQ_HOST:-$(ip route | awk '/^default/{print $3}')}"
 curl -sS --max-time 5 "http://${AIQ_HOST}:8000/health"
 ```
 
