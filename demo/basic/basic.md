@@ -91,7 +91,8 @@ with no binary restriction, then apply it with `nemoclaw <name> policy-add`.
 
 ---
 
-## Phase 1: Connect & Run Demo Prompts (5 min)
+## Phase 1: Connect & Run Demo Prompts (5 min) 
+#TODO: Swap phase 12 and phase 2
 
 ```bash
 nemoclaw <name> connect
