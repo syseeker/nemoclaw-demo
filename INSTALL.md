@@ -63,7 +63,7 @@ You can choose your desired installation option from below:
 
 ---
 
-### Option B: Brev NemoClaw Launchable - Connect to Cursor IDE (Linux host machine)
+### Option B: Brev NemoClaw Launchable - Connect to Cursor IDE/ VSCode IDE (Linux host machine)
 
 > Requires completion of [Option A](#option-a-brev-nemoclaw-launchable) steps 1–3, and [Cursor](https://www.cursor.com/) installed on your local machine.
 
@@ -85,7 +85,15 @@ brev login
 brev open <instance-name> cursor
 ```
 
-Cursor will connect to the remote instance via SSH. From there, continue to [Step 2](#step-2-install-nemoclaw).
+If you using VSCode as your IDE, you can use the following shell script to connect the Brev instance to VSCode.
+
+**Open** your Brev instance in VSCode:
+
+```bash
+brev open <instance-name> code
+```
+
+Cursor/ VSCode will connect to the remote instance via SSH. From there, continue to [Step 2](#step-2-install-nemoclaw).
 
 ---
 

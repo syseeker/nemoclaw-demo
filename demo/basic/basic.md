@@ -36,17 +36,46 @@ you create yourself.
 with the following content:
 
 ```yaml
-rules:
-  - host: query1.finance.yahoo.com
-    port: 443
-  - host: query2.finance.yahoo.com
-    port: 443
-  - host: finance.yahoo.com
-    port: 443
-  - host: www.google.com
-    port: 443
-  - host: google.com
-    port: 443
+network_policies:
+  finance:
+    name: finance
+    endpoints:
+      - host: query1.finance.yahoo.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+      - host: query2.finance.yahoo.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+      - host: finance.yahoo.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+      - host: www.google.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+      - host: google.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+
 ```
 
 Then apply it:
@@ -62,7 +91,8 @@ with no binary restriction, then apply it with `nemoclaw <name> policy-add`.
 
 ---
 
-## Phase 1: Connect & Run Demo Prompts (5 min)
+## Phase 1: Connect & Run Demo Prompts (5 min) 
+#TODO: Swap phase 12 and phase 2
 
 ```bash
 nemoclaw <name> connect
