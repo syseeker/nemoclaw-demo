@@ -16,7 +16,7 @@ DMs or a group chat at any time.
 - Querying and modifying Google Calendar from Telegram (DM and group)
 - Troubleshooting common issues (token mismatch, group policy, stale sessions)
 
-**Reference:** [Telegram bridge demo](../telegram-bridge/telegram-bridge.md) · [Google Workspace demo](../google-workspace/google-workspace-guide.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
+**Reference:** [Telegram bridge demo](../telegram-bridge/telegram-bridge.md) · [OpenClaw skills](https://docs.openclaw.ai/tools/skills)
 
 ---
 
@@ -216,9 +216,14 @@ openshell policy get --full <sandbox-name> | grep google_calendar
 
 ### Test gog directly in the sandbox
 
+`gog` is **not** on the interactive shell's PATH (the sandbox `.bashrc` is a
+read-only root-owned file, and PATH isn't needed: the OpenClaw agent invokes the
+tool by its absolute path via the calendar skill). When testing by hand, call it
+by full path:
+
 ```bash
 nemoclaw <sandbox-name> connect
-gog calendar events --max 3
+/sandbox/.config/gogcli/bin/gog calendar events --max 3
 ```
 
 If this returns JSON with your calendar events, you're ready.
@@ -255,11 +260,12 @@ Open your Telegram bot (DM or group) and send:
 
 ## Multiple Calendars
 
-By default, commands use `primary` (your main calendar). To target other calendars:
+By default, commands use `primary` (your main calendar). To target other calendars
+(run by full path in the sandbox shell — see note in "Test gog directly" above):
 
 ```bash
-gog calendar calendars       # list all calendars with IDs
-gog calendar create <calendar-id> --title "Gym" --start "2026-04-14T07:00:00" --duration 1h
+/sandbox/.config/gogcli/bin/gog calendar calendars       # list all calendars with IDs
+/sandbox/.config/gogcli/bin/gog calendar create <calendar-id> --title "Gym" --start "2026-04-14T07:00:00" --duration 1h
 ```
 
 In Telegram, just say: *"Add a Gym session to my Personal calendar at 7am tomorrow."*
@@ -300,5 +306,4 @@ telegram-calendar/
 ## See also
 
 - [Telegram bridge demo](../telegram-bridge/telegram-bridge.md)
-- [Google Workspace demo](../google-workspace/google-workspace-guide.md)
 - [INSTALL.md](../../INSTALL.md)

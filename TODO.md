@@ -42,7 +42,7 @@ Split the current monolithic content into focused documents.
 - [ ] **P1** AI-Q Blueprint: integrate AI-Q blueprint with NemoClaw → `demo/aiq-blueprint/`
 - [ ] **P1** cuOpt scheduling: cuOpt as MCP service for route/schedule optimization → `demo/cuopt-mcp/`
 - [~] **P2** Nemotron voice agent: voice-driven agent demo scaffolded with `install.sh`, OpenClaw bridge, and Jewel tour-guide workspace → `demo/voice-agent/`
-- [ ] **P2** Gaming example: GOG / Blender gaming demo (based on `demo-nvidia-official/gog-demo/`, `blender-demo/`) → `demo/gaming/`
+- [ ] **P2** Gaming example: GOG / Blender gaming demo → `demo/gaming/`
 - [ ] **P2** Google Calendar: test OpenClaw connecting to Google Calendar API
 - [ ] **P2** Outlook web login: OpenClaw opens web Outlook, logs in, and downloads files
 - [ ] **P2** NAT profiler: token counting and model usage tracking for cost/performance profiling

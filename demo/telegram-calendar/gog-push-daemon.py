@@ -31,7 +31,12 @@ log = logging.getLogger(__name__)
 CREDS_PATH = os.path.expanduser("~/.nemoclaw/credentials.json")
 TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 PID_FILE = os.path.expanduser("~/.nemoclaw/gog-push-daemon.pid")
-SANDBOX_TOKEN_DIR = "/sandbox/.openclaw-data/gogcli"
+# `openshell sandbox upload <name> <local_dir> <dest>` copies local_dir to
+# dest/<basename(local_dir)>/...  To land the token files in
+# /sandbox/.openclaw-data/gogcli we stage them under a local dir named "gogcli"
+# and upload that to the parent dir below.
+SANDBOX_TOKEN_PARENT = "/sandbox/.openclaw-data"
+SANDBOX_TOKEN_LEAF = "gogcli"
 
 
 def write_pid():
@@ -97,12 +102,14 @@ def push_token(name, token, expiry_ts, openshell_bin):
     """Write token + expiry to temp dir and upload into sandbox."""
     tmp = tempfile.mkdtemp(prefix="gog-token-")
     try:
-        with open(os.path.join(tmp, "access_token"), "w") as f:
+        staged = os.path.join(tmp, SANDBOX_TOKEN_LEAF)
+        os.makedirs(staged)
+        with open(os.path.join(staged, "access_token"), "w") as f:
             f.write(token)
-        with open(os.path.join(tmp, "token_expiry"), "w") as f:
+        with open(os.path.join(staged, "token_expiry"), "w") as f:
             f.write(str(int(expiry_ts)))
         subprocess.run(
-            [openshell_bin, "sandbox", "upload", name, tmp, SANDBOX_TOKEN_DIR],
+            [openshell_bin, "sandbox", "upload", name, staged, SANDBOX_TOKEN_PARENT],
             check=True, capture_output=True, text=True,
         )
         log.info("Token pushed to sandbox '%s', expires %s", name, time.ctime(expiry_ts))

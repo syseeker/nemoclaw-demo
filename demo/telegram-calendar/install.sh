@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CREDS_PATH="$HOME/.nemoclaw/credentials.json"
-SESSIONS_PATH="/sandbox/.openclaw-data/agents/main/sessions/sessions.json"
+SESSIONS_PATH="/sandbox/.openclaw/agents/main/sessions/sessions.json"
 PID_FILE="$HOME/.nemoclaw/gog-push-daemon.pid"
 LOG_FILE="$HOME/.nemoclaw/gog-push-daemon.log"
 OLD_TOKEN_PID="$HOME/.nemoclaw/google-token-server.pid"
@@ -295,10 +295,16 @@ info "Uploading gog CLI to sandbox..."
 # For desktop OAuth apps, client_id and client_secret are NOT treated as secrets
 # by Google. The real credential (refresh token) stays on the host. gog requires
 # credentials.json to be present even when using GOG_ACCESS_TOKEN.
+# NOTE on `openshell sandbox upload <NAME> <LOCAL> <DEST>` semantics:
+#   - if LOCAL is a file, it is written to exactly DEST
+#   - if LOCAL is a directory, it is copied to DEST/<basename(LOCAL)>/...
+# So to land files inside /sandbox/.config/gogcli we stage them under a local
+# dir literally named "gogcli" and upload that dir to the PARENT (/sandbox/.config).
 CONFIG_UPLOAD=$(mktemp -d /tmp/gogcli-config-XXXXXX)
 trap 'rm -rf "$CONFIG_UPLOAD"' EXIT
+mkdir -p "$CONFIG_UPLOAD/gogcli"
 
-cat > "$CONFIG_UPLOAD/config.json" << 'CFGEOF'
+cat > "$CONFIG_UPLOAD/gogcli/config.json" << 'CFGEOF'
 {
   "default_timezone": "UTC"
 }
@@ -316,23 +322,24 @@ creds = {
         'redirect_uris': ['http://localhost']
     }
 }
-with open('$CONFIG_UPLOAD/credentials.json', 'w') as f:
+with open('$CONFIG_UPLOAD/gogcli/credentials.json', 'w') as f:
     json.dump(creds, f, indent=2)
 "
 
-openshell sandbox upload "$SANDBOX_NAME" "$CONFIG_UPLOAD" /sandbox/.config/gogcli 2>/dev/null || \
+openshell sandbox upload "$SANDBOX_NAME" "$CONFIG_UPLOAD/gogcli" /sandbox/.config 2>/dev/null || \
   warn "Config upload warning (non-fatal)"
 
 # Upload gog-bin (actual binary) + gog (wrapper script)
 BIN_UPLOAD=$(mktemp -d /tmp/gogcli-bin-XXXXXX)
 trap 'rm -rf "$CONFIG_UPLOAD" "$BIN_UPLOAD"' EXIT
+mkdir -p "$BIN_UPLOAD/bin"
 
-cp "$GOG_BIN" "$BIN_UPLOAD/gog-bin"
-chmod +x "$BIN_UPLOAD/gog-bin"
+cp "$GOG_BIN" "$BIN_UPLOAD/bin/gog-bin"
+chmod +x "$BIN_UPLOAD/bin/gog-bin"
 
 # Wrapper reads the pushed access token from the writable data directory
 # and passes it to gog-bin via GOG_ACCESS_TOKEN, bypassing gog's keyring.
-cat > "$BIN_UPLOAD/gog" << 'WRAPEOF'
+cat > "$BIN_UPLOAD/bin/gog" << 'WRAPEOF'
 #!/bin/bash
 _TOKEN="$(cat /sandbox/.openclaw-data/gogcli/access_token 2>/dev/null)" || {
     echo "gog: access token not found. Is the push daemon running on the host?" >&2
@@ -350,16 +357,17 @@ export XDG_CONFIG_HOME=/sandbox/.config
 exec env GOG_ACCESS_TOKEN="$_TOKEN" GOG_JSON=1 \
     /sandbox/.config/gogcli/bin/gog-bin "$@"
 WRAPEOF
-chmod +x "$BIN_UPLOAD/gog"
+chmod +x "$BIN_UPLOAD/bin/gog"
 
-openshell sandbox upload "$SANDBOX_NAME" "$BIN_UPLOAD" /sandbox/.config/gogcli/bin 2>/dev/null || \
+openshell sandbox upload "$SANDBOX_NAME" "$BIN_UPLOAD/bin" /sandbox/.config/gogcli 2>/dev/null || \
   fail "Failed to upload gog binary to sandbox."
 ok "gog binary + wrapper uploaded"
 
-# Add to PATH via .bashrc
-openshell sandbox exec -n "$SANDBOX_NAME" -- bash -c \
-  'grep -q "gogcli/bin" /sandbox/.bashrc 2>/dev/null || echo "export PATH=\"/sandbox/.config/gogcli/bin:\$PATH\"" >> /sandbox/.bashrc' 2>/dev/null
-ok "gog added to sandbox PATH"
+# Note: no PATH entry is added. gog is always invoked by its absolute path
+# (/sandbox/.config/gogcli/bin/gog) — both the calendar SKILL.md and the gog
+# wrapper reference the full path, and the agent runs commands non-interactively
+# (which does not source .bashrc). The sandbox .bashrc is also a read-only
+# root-owned file, so writing to it would fail regardless.
 
 # Upload gog SKILL.md so OpenClaw discovers gog as a tool
 SKILL_UPLOAD=$(mktemp -d /tmp/gogcli-skill-XXXXXX)
@@ -367,9 +375,18 @@ trap 'rm -rf "$CONFIG_UPLOAD" "$BIN_UPLOAD" "$SKILL_UPLOAD"' EXIT
 mkdir -p "$SKILL_UPLOAD/calendar"
 cp "$SCRIPT_DIR/skills/calendar/SKILL.md" "$SKILL_UPLOAD/calendar/SKILL.md"
 
-openshell sandbox upload "$SANDBOX_NAME" "$SKILL_UPLOAD/calendar" /sandbox/.openclaw/skills/calendar 2>/dev/null || \
+openshell sandbox upload "$SANDBOX_NAME" "$SKILL_UPLOAD/calendar" /sandbox/.openclaw/skills 2>/dev/null || \
   warn "Skill upload warning (non-fatal)"
 ok "calendar SKILL.md deployed to /sandbox/.openclaw/skills/calendar/"
+
+# Enable the calendar skill in OpenClaw config. Deploying SKILL.md is not enough:
+# OpenClaw only surfaces a skill to the agent when skills.entries.<name>.enabled
+# is true. The gateway watches openclaw.json and hot-reloads on change. Done as a
+# single-line python (openshell exec rejects newlines in the command argument).
+openshell sandbox exec -n "$SANDBOX_NAME" -- bash -c \
+  'python3 -c "import json; p=\"/sandbox/.openclaw/openclaw.json\"; d=json.load(open(p)); d.setdefault(\"skills\",{}).setdefault(\"entries\",{})[\"calendar\"]={\"enabled\":True}; json.dump(d,open(p,\"w\"),indent=2)"' 2>/dev/null \
+  && ok "calendar skill enabled in openclaw.json (hot-reloaded)" \
+  || warn "Could not enable calendar skill in openclaw.json — set skills.entries.calendar.enabled=true manually"
 
 # ─────────────────────────────────────────────────────────────────────
 # Step 7: Clean up old integration artifacts

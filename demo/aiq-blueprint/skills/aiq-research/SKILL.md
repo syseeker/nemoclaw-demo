@@ -1,6 +1,20 @@
 ---
 name: aiq-research
-description: Run a multi-agent deep-research query against the AI-Q Blueprint backend (intent classification, shallow/deep research, web search, citations) and return a concise answer with sources. Use for any "research", "deep dive", "investigate", or "find citations" request.
+description: >-
+  Use for "research", "deep dive", "investigate", or "find citations" requests,
+  the /research and /deep-research commands, or "use skill aiq-research".
+  Delegates to the AI-Q Blueprint backend on the host (intent classification,
+  Tavily web search, citation synthesis) and returns an answer with sources.
+  HOW TO CALL IT — run exactly this curl, do not improvise and do not write
+  code to resolve a host: curl -sS --max-time 180 -X POST
+  "http://host.docker.internal:8000/generate" -H 'Content-Type:
+  application/json' -d '{"query":"<USER QUERY>"}'. The host is ALWAYS
+  host.docker.internal — NEVER 127.0.0.1 or localhost (AI-Q is on the host, not
+  in the sandbox). AI-Q itself does the web search, so the sandbox needs NO
+  public internet: do NOT curl the public internet, do NOT claim the network is
+  blocked, and do NOT ask the operator to change policy; just run that curl.
+  Treat it as failed only if THAT curl fails. Read this skill's SKILL.md (same
+  dir) for streaming and the Answer+Sources output contract.
 user-invocable: true
 ---
 
@@ -12,6 +26,24 @@ Answer research-style questions by delegating to the **AI-Q Blueprint**
 multi-agent pipeline running on the host. AI-Q handles intent classification,
 shallow/deep research, web search (Tavily), and citation synthesis. You return
 a tight summary plus every source AI-Q cites.
+
+## Critical — how this skill reaches the network
+
+**Do NOT probe the public internet** (e.g. `curl google.com`, `ping`, DNS
+checks) and **do NOT infer from a blocked public request that this skill is
+unavailable.** This sandbox has no direct public internet *by design* — that is
+expected and irrelevant to this skill.
+
+This skill talks **only** to AI-Q on the host (the sandbox's default gateway,
+port 8000), which the `aiq-local` network policy explicitly allows. **AI-Q
+itself performs the web search** (Tavily) from the host. So:
+
+- Your **first action MUST be the `/health` curl** in **Error handling** below.
+- If `/health` returns `{"status":"healthy"}`, **proceed to `/generate`** — do
+  not stop, do not ask the operator to "adjust the network policy", do not fall
+  back to local docs or your own knowledge.
+- Report a network problem **only if that specific `curl` to AI-Q fails** — and
+  quote the actual curl error. Never claim it's blocked without having run it.
 
 ## Use when
 
@@ -30,15 +62,20 @@ Do **not** use this skill for:
 
 ## Endpoint
 
-AI-Q is reachable from inside the sandbox at:
+AI-Q runs **on the host** on port 8000, reachable from the sandbox as
+**`host.docker.internal`**. Always use that literal host:
 
-```bash
-AIQ_HOST="<host-ip-from-demo-4-step-3>"
+```
+http://host.docker.internal:8000
 ```
 
-This value must match the host Docker gateway added in the **`aiq-local`**
-network policy (see [the AI-Q Blueprint demo](../../aiq-blueprint.md), Steps 3–4). If it
-is missing, ask the user to set it before calling AI-Q.
+**Do not** try to resolve, compute, or guess the host, and **never** use
+`127.0.0.1` or `localhost` — AI-Q is on the host, not inside the sandbox, so
+localhost will be rejected by the network policy. `host.docker.internal`
+resolves to the host Docker gateway, which is the host allowed in the
+**`aiq-local`** policy (see [the AI-Q Blueprint demo](../../aiq-blueprint.md),
+Steps 3–4). If a call is blocked, confirm that policy is applied — do not
+switch to localhost.
 
 Endpoints used:
 
@@ -50,15 +87,20 @@ Endpoints used:
 
 ## How to run a query
 
-Use the `exec` tool with a **single** `curl` call per attempt. Prefer
-non-streaming for clean JSON; only use streaming if the user explicitly asks
-for live output or the query is expected to take a long time. Before calling
-AI-Q, make sure `AIQ_HOST` is set in the sandbox shell.
+Required order, every time: **(1)** run the `/health` curl (see **Error
+handling**); **(2)** if healthy, immediately run the `/generate` curl below.
+These two `exec` calls are the *only* network actions this skill takes — no
+public-internet probes, no fallbacks.
+
+Use the `exec` tool with a **single** `curl` call per attempt — a plain shell
+`curl`, not JavaScript or a code bridge. Prefer non-streaming for clean JSON;
+only use streaming if the user explicitly asks for live output or the query is
+expected to take a long time. Use the literal host `host.docker.internal`.
 
 **Non-streaming (default):**
 
 ```bash
-curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
+curl -sS --max-time 180 -X POST "http://host.docker.internal:8000/generate" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
 ```
@@ -66,7 +108,7 @@ curl -sS --max-time 180 -X POST "http://${AIQ_HOST}:8000/generate" \
 **Streaming:**
 
 ```bash
-curl -N --max-time 300 -X POST "http://${AIQ_HOST}:8000/generate/stream" \
+curl -N --max-time 300 -X POST "http://host.docker.internal:8000/generate/stream" \
   -H "Content-Type: application/json" \
   -d '{"query": "<USER_QUERY>"}'
 ```
@@ -81,13 +123,18 @@ and pipe it to `curl --data-binary @-`.
 Before the first real query, probe health:
 
 ```bash
-curl -sS --max-time 5 "http://${AIQ_HOST}:8000/health"
+curl -sS --max-time 5 "http://host.docker.internal:8000/health"
 ```
 
-If health fails or any `/generate*` call returns non-2xx / empty body:
+Only treat this as a failure if **this exact `curl` to AI-Q** fails (non-2xx,
+empty body, or a connection/proxy error). A blocked *public-internet* request
+is **not** a failure of this skill — ignore it entirely.
 
-1. State plainly that AI-Q is unreachable — do **not** silently fall back to
-   guesses or the built-in search.
+If, and only if, the AI-Q `curl` itself fails:
+
+1. Quote the actual `curl` error/output, then state plainly that AI-Q is
+   unreachable — do **not** silently fall back to guesses or the built-in
+   search.
 2. Suggest the user verify `docker ps | grep aiq-agent` on the host and that
    the `aiq-local` network policy is applied.
 3. Stop. Do not retry more than twice.
